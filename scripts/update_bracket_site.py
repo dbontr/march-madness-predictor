@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import UTC, date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -148,7 +148,7 @@ def main() -> None:
         locked_winners=locked_winners,
     )
 
-    updated_at = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    updated_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
     matchup_summary.to_csv(generated_dir / "matchup_summary.csv", index=False)
     advancement.to_csv(generated_dir / "team_advancement_odds.csv", index=False)

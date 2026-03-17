@@ -2,11 +2,11 @@
 
 A static March Madness bracket app for GitHub Pages with an offline Python pipeline.
 
-It is designed for the same deployment style as your Groundhog app:
+It is designed for GitHub Pages with Actions:
 
 - `docs/` contains the site that GitHub Pages serves
 - `scripts/` contains the Python pipeline
-- `.github/workflows/` updates the site automatically
+- `.github/workflows/` refreshes data and deploys Pages automatically
 
 ## What it does
 
@@ -39,11 +39,12 @@ pip install -r requirements.txt
 python scripts/update_bracket_site.py --season 2026
 ```
 
-Then commit and push the repository. If GitHub Pages is set to publish from `main` -> `/docs`, the site will appear automatically.
+Then commit and push the repository, and in GitHub set **Settings -> Pages -> Source** to **GitHub Actions**.
 
 ## Repo layout
 
 ```text
+.github/workflows/deploy-pages.yml
 .github/workflows/update-bracket.yml
 config.json
 scripts/
@@ -54,6 +55,7 @@ scripts/
   bracket_logic.py
   public_sources.py
 docs/
+  .nojekyll
   index.html
   data/
 data/raw/<season>/
@@ -123,12 +125,11 @@ Convention:
 
 ## Automatic updates
 
-The included GitHub Actions workflow:
+The included GitHub Actions workflows:
 
-- runs on manual dispatch
-- runs on a schedule during the tournament window
-- regenerates `docs/data/*.json`
-- commits changes back to the repo
+- `update-bracket.yml` runs on manual dispatch and on a tournament schedule
+- `update-bracket.yml` regenerates `docs/data/*.json` and commits updates
+- `deploy-pages.yml` deploys `docs/` to GitHub Pages when `docs/**` changes
 
 ## Yearly use
 
