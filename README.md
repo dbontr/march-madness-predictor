@@ -1,69 +1,55 @@
 # dbontr bracket oracle
 
-A static March Madness bracket app for GitHub Pages with an offline Python pipeline.
+Live March Madness bracket predictions with a GitHub Pages-only runtime.
 
-It is designed for GitHub Pages with Actions:
+On every page load, the browser fetches current ESPN tournament data, trains the lightweight model client-side, simulates the bracket, and renders results. No backend is required.
 
-- `docs/` contains the site that GitHub Pages serves
-- `scripts/` contains the Python pipeline
-- `.github/workflows/` refreshes data and deploys Pages automatically
+## Stack
 
-## What it does
+- Frontend UI: `docs/index.html`
+- Browser runtime engine: `docs/live-runtime.js`
+- Runtime data files: `docs/data/runtime/<season>/`
+- Legacy/offline scripts: `scripts/` and `src/server/` (not required for GitHub Pages runtime)
 
-- trains a matchup model from historical game results and team features
-- loads the current tournament field from ESPN's public bracket page when available
-- fetches completed tournament games from ESPN's public scoreboard API
-- locks in known winners automatically
-- predicts only the remaining games
-- exports static JSON into `docs/data/`
-- publishes through GitHub Pages
+## GitHub Pages deploy
 
-## What you still control
+1. Push this repo to GitHub.
+2. In repo settings, enable Pages and set source to the `docs/` folder (on your chosen branch).
+3. Open the Pages URL.
 
-Reliable public player injury feeds for college basketball are inconsistent, so this project keeps injuries as a simple team-level override file:
+The site recomputes predictions per request directly in the browser.
 
-- `data/raw/<season>/injuries.csv`
-
-That file is optional. If you do not provide it, the model still runs.
-
-## Included sample data
-
-This zip includes a synthetic `data/raw/2026/` sample so the site can boot immediately. Replace it with your real season data for serious use.
-
-## Quick start
+## Local preview
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python scripts/update_bracket_site.py --season 2026
+python3 -m http.server 8080
 ```
 
-Then commit and push the repository, and in GitHub set **Settings -> Pages -> Source** to **GitHub Actions**.
+Then open `http://localhost:8080/docs/`.
 
-## Repo layout
+## Runtime query params
 
-```text
-.github/workflows/deploy-pages.yml
-.github/workflows/update-bracket.yml
-config.json
-scripts/
-  update_bracket_site.py
-  build_site_data.py
-  pages_app_template.html
-  predictor.py
-  bracket_logic.py
-  public_sources.py
-docs/
-  .nojekyll
-  index.html
-  data/
-data/raw/<season>/
-  team_stats.csv
-  historical_games.csv
-  injuries.csv         # optional
-  bracket.csv          # optional cache / override
-```
+Optional URL parameters:
+
+- `season` (number)
+- `simulations` (number)
+- `random_seed` (number)
+
+Example:
+
+`/docs/?season=2026&simulations=2500&random_seed=42`
+
+## Runtime data layout
+
+The browser runtime expects:
+
+- `docs/data/runtime/config.json`
+- `docs/data/runtime/<season>/team_stats.csv`
+- `docs/data/runtime/<season>/historical_games.csv`
+- `docs/data/runtime/<season>/aliases.csv` (optional)
+- `docs/data/runtime/<season>/injuries.csv` (optional)
+
+Current repo includes `2026` runtime CSVs under `docs/data/runtime/2026/`.
 
 ## Raw data files
 
@@ -75,7 +61,7 @@ Required columns:
 - `team`
 - `seed`
 
-Recommended numeric feature columns:
+Recommended numeric columns:
 
 - `adj_offense`
 - `adj_defense`
@@ -110,9 +96,9 @@ Optional:
 - `game_date`
 - `round_name`
 
-### `injuries.csv`
+### `injuries.csv` (optional)
 
-Optional columns:
+Columns:
 
 - `team`
 - `injuries_impact`
@@ -120,31 +106,18 @@ Optional columns:
 Convention:
 
 - `0.0` = healthy baseline
-- negative = worse because of injuries / availability
+- negative = worse from injuries/availability
 - positive = better than baseline
 
-## Automatic updates
+### `aliases.csv` (optional but recommended)
 
-The included GitHub Actions workflows:
+Columns:
 
-- `update-bracket.yml` runs on manual dispatch and on a tournament schedule
-- `update-bracket.yml` regenerates `docs/data/*.json` and commits updates
-- `deploy-pages.yml` deploys `docs/` to GitHub Pages when `docs/**` changes
-
-## Yearly use
-
-Each season, add a new folder:
-
-```text
-data/raw/2027/
-```
-
-and drop in fresh `team_stats.csv` and `historical_games.csv`.
-
-The script auto-detects the active season by date unless you pass `--season` explicitly.
+- `canonical`
+- `alias`
 
 ## Notes
 
-- The bracket field and completed game results are fetched from ESPN public pages/endpoints when possible.
-- If the bracket fetch fails, the script falls back to `data/raw/<season>/bracket.csv`.
-- If automatic result fetch fails, the model still produces a bracket from the current raw files.
+- ESPN public JSON endpoints are used for bracket events, completed results, and team logos.
+- ESPN HTML bracket pages are not scraped from the browser due cross-origin restrictions.
+- If live runtime fetch fails, the page falls back to existing static files in `docs/data/`, then demo data.

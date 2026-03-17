@@ -12,6 +12,7 @@ from bracket_logic import REGION_ORDER, build_bracket_from_region_seed_map, game
 
 ESPN_BRACKET_URL = "https://www.espn.com/mens-college-basketball/bracket/_/season/{season}/{season}-ncaa-tournament"
 ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard"
+ESPN_TEAMS_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/teams"
 
 
 class FetchError(RuntimeError):
@@ -184,3 +185,49 @@ def fetch_completed_results(first_day: str, last_day: str, alias_map: Optional[D
                 known[game_pair_key(names[0], names[1])] = winner
         day += timedelta(days=1)
     return known
+
+
+def fetch_team_logo_map(target_teams: List[str], alias_map: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    alias_map = alias_map or {}
+    response = requests.get(ESPN_TEAMS_URL, params={"limit": 1000}, timeout=30)
+    response.raise_for_status()
+    payload = response.json()
+
+    team_entries = payload.get("sports", [{}])[0].get("leagues", [{}])[0].get("teams", [])
+    lookup: Dict[str, str] = {}
+
+    for entry in team_entries:
+        team = entry.get("team", {})
+        logos = team.get("logos") or []
+        if not logos:
+            continue
+        logo_url = str(logos[0].get("href", "")).strip()
+        if not logo_url:
+            continue
+
+        candidate_names = {
+            team.get("displayName"),
+            team.get("shortDisplayName"),
+            team.get("nickname"),
+            team.get("location"),
+            team.get("abbreviation"),
+        }
+        location = str(team.get("location", "")).strip()
+        mascot = str(team.get("name", "")).strip()
+        if location and mascot:
+            candidate_names.add(f"{location} {mascot}")
+
+        for raw_name in candidate_names:
+            if not raw_name:
+                continue
+            aliased = maybe_alias(str(raw_name), alias_map)
+            lookup[canonical_name(aliased)] = logo_url
+
+    result: Dict[str, str] = {}
+    for team_name in sorted(set(str(t).strip() for t in target_teams if str(t).strip())):
+        key = canonical_name(maybe_alias(team_name, alias_map))
+        logo = lookup.get(key)
+        if logo:
+            result[team_name] = logo
+
+    return result

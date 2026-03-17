@@ -1,0 +1,10 @@
+{
+  "default_season": 2026,
+  "default_simulations": 1600,
+  "tournament_windows": {
+    "2026": {
+      "first_four_start": "2026-03-17",
+      "championship_date": "2026-04-08"
+    }
+  }
+}

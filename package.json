@@ -1,0 +1,20 @@
+{
+  "name": "march-madness-predictor",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Live March Madness predictor with TypeScript serverless runtime",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "predict:once": "tsx scripts-ts/run-predict.ts"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "csv-parse": "^5.5.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "@vercel/node": "^5.3.24",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}

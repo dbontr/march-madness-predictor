@@ -27,8 +27,10 @@ def export_site_json(
     advancement: pd.DataFrame,
     best_bracket: pd.DataFrame,
     metrics: Dict[str, float],
+    team_logos: Dict[str, str] | None = None,
 ) -> None:
     docs_data_dir.mkdir(parents=True, exist_ok=True)
+    team_logos = team_logos or {}
 
     max_round = max(int(col.replace("reach_round_", "")) for col in advancement.columns if col.startswith("reach_round_"))
     champ_col = f"reach_round_{max_round}"
@@ -48,6 +50,7 @@ def export_site_json(
             "simulations": int(simulations),
             "updated_at": updated_at,
             "training_metrics": metrics,
+            "team_logos_count": len(team_logos),
         },
         "matchups": matchup_summary.sort_values(["round_order", "slot"]).to_dict(orient="records"),
     }
@@ -59,3 +62,6 @@ def export_site_json(
 
     with (docs_data_dir / "best_bracket.json").open("w", encoding="utf-8") as f:
         json.dump({"best_bracket": best_bracket.sort_values(["round_order", "slot"]).to_dict(orient="records")}, f, indent=2)
+
+    with (docs_data_dir / "team_logos.json").open("w", encoding="utf-8") as f:
+        json.dump({"team_logos": team_logos}, f, indent=2)

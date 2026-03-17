@@ -19,7 +19,14 @@ from predictor import (
     simulate_tournament,
     train_matchup_model,
 )
-from public_sources import FetchError, fetch_bracket_from_espn, fetch_completed_results, load_alias_map, maybe_alias
+from public_sources import (
+    FetchError,
+    fetch_bracket_from_espn,
+    fetch_completed_results,
+    fetch_team_logo_map,
+    load_alias_map,
+    maybe_alias,
+)
 
 
 def repo_root() -> Path:
@@ -138,6 +145,13 @@ def main() -> None:
 
     locked_winners = apply_known_results(bracket, known_results)
 
+    team_logos: Dict[str, str] = {}
+    try:
+        all_teams = sorted(set(snapshot["team"].astype(str)))
+        team_logos = fetch_team_logo_map(all_teams, alias_map=alias_map)
+    except Exception as exc:
+        print(f"Logo fetch failed; continuing without team logos: {exc}")
+
     matchup_summary, advancement, best_bracket = simulate_tournament(
         model=model,
         bracket=bracket,
@@ -165,6 +179,7 @@ def main() -> None:
         advancement=advancement,
         best_bracket=best_bracket,
         metrics=metrics,
+        team_logos=team_logos,
     )
 
     champion_col = max((c for c in advancement.columns if c.startswith("reach_round_")), key=lambda c: int(c.split("_")[-1]))
