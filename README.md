@@ -2,14 +2,29 @@
 
 Live March Madness bracket predictions with a GitHub Pages-only runtime.
 
-On every page load, the browser fetches current ESPN tournament data, trains the lightweight model client-side, simulates the bracket, and renders results. No backend is required.
+On every page load (each run), the browser generates predictions fresh:
+
+1. fetches current ESPN tournament data
+2. trains the lightweight matchup model client-side
+3. simulates the bracket
+4. renders updated odds and the projected path
+
+No backend is required.
+
+## Goal
+
+This repo is now run-based, not batch-output-based.
+
+- We do not rely on a required backend API endpoint.
+- We do not require GitHub Actions cron jobs to refresh predictions.
+- Predictions are computed live in the browser each time the app is opened/reloaded.
 
 ## Stack
 
 - Frontend UI: `docs/index.html`
 - Browser runtime engine: `docs/live-runtime.js`
 - Runtime data files: `docs/data/runtime/<season>/`
-- Legacy/offline scripts: `scripts/` and `src/server/` (not required for GitHub Pages runtime)
+- Legacy/offline scripts: `scripts/` and `src/server/` (optional, not required for live GitHub Pages runs)
 
 ## GitHub Pages deploy
 
@@ -17,7 +32,9 @@ On every page load, the browser fetches current ESPN tournament data, trains the
 2. In repo settings, enable Pages and set source to the `docs/` folder (on your chosen branch).
 3. Open the Pages URL.
 
-The site recomputes predictions per request directly in the browser.
+The app recomputes predictions directly in the browser every open/refresh.
+
+If your root URL is publishing repo root, keep `index.html` in root so it redirects to `./docs/`.
 
 ## Local preview
 
@@ -39,6 +56,8 @@ Example:
 
 `/docs/?season=2026&simulations=2500&random_seed=42`
 
+If `random_seed` is omitted, runtime uses the default seed configured in code.
+
 ## Runtime data layout
 
 The browser runtime expects:
@@ -50,6 +69,17 @@ The browser runtime expects:
 - `docs/data/runtime/<season>/injuries.csv` (optional)
 
 Current repo includes `2026` runtime CSVs under `docs/data/runtime/2026/`.
+
+## What Happens Per Run
+
+At runtime, `docs/live-runtime.js`:
+
+1. loads local runtime CSV files
+2. fetches NCAA scoreboard/event data from ESPN public JSON endpoints
+3. derives bracket slots and locks completed game winners
+4. trains and applies the matchup model
+5. runs Monte Carlo simulation
+6. renders bracket board + title odds + team logos
 
 ## Raw data files
 
