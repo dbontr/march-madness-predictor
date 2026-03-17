@@ -286,6 +286,7 @@
       min-width: 1760px;
       align-items: start;
       padding: 6px 6px 12px;
+      position: relative;
     }
 
     .round-col {
@@ -332,6 +333,22 @@
       height: calc(var(--board-height) * 0.72);
     }
 
+    .flow-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      overflow: visible;
+    }
+
+    .flow-path {
+      fill: none;
+      stroke: rgba(109, 93, 66, 0.55);
+      stroke-width: 1.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
     .game-card {
       border: 1px solid var(--line);
       border-radius: 11px;
@@ -343,6 +360,7 @@
       right: 0;
       top: var(--game-top, 50%);
       transform: translateY(-50%);
+      z-index: 2;
     }
 
     .game-card[data-flow="right"]::after {
@@ -550,7 +568,8 @@
       }
 
       .incoming,
-      .game-card::after {
+      .game-card::after,
+      .flow-layer {
         display: none !important;
       }
     }
@@ -640,7 +659,10 @@
       data: demoData,
       search: "",
       matchupsBySlot: new Map(),
-      roundNames: new Map()
+      roundNames: new Map(),
+      flowResizeBound: false,
+      flowRaf: 0,
+      lastFlowSlots: []
     };
 
     const REGION_ORDER = { EAST: 0, WEST: 1, SOUTH: 2, MIDWEST: 3, FINAL_FOUR: 4, TITLE: 5 };
@@ -824,6 +846,90 @@
       return 0;
     }
 
+    function nextSlotForFlow(slot) {
+      const roundMatch = String(slot || "").match(/^R([1-3])_([A-Z]+)_(\d+)$/);
+      if (roundMatch) {
+        const round = Number(roundMatch[1]);
+        const region = roundMatch[2];
+        const idx = Number(roundMatch[3]);
+        return `R${round + 1}_${region}_${Math.ceil(idx / 2)}`;
+      }
+
+      const eliteEight = String(slot || "").match(/^R4_([A-Z]+)_1$/);
+      if (eliteEight) {
+        const region = eliteEight[1];
+        if (region === "EAST" || region === "WEST") return "R5_1";
+        if (region === "SOUTH" || region === "MIDWEST") return "R5_2";
+      }
+
+      if (/^R5_[12]$/.test(String(slot || ""))) {
+        return "TITLE";
+      }
+
+      return null;
+    }
+
+    function drawBracketFlow(board, renderedSlots) {
+      const oldLayer = board.querySelector(".flow-layer");
+      if (oldLayer) oldLayer.remove();
+
+      const slots = [...new Set((renderedSlots || []).map(slot => String(slot || "").trim()).filter(Boolean))];
+      if (!slots.length) return;
+
+      const slotSet = new Set(slots);
+      const edges = [];
+      for (const slot of slots) {
+        const next = nextSlotForFlow(slot);
+        if (next && slotSet.has(next)) {
+          edges.push([slot, next]);
+        }
+      }
+
+      if (!edges.length) return;
+
+      const boardRect = board.getBoundingClientRect();
+      if (!boardRect.width || !boardRect.height) return;
+
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("class", "flow-layer");
+      svg.setAttribute("viewBox", `0 0 ${Math.ceil(boardRect.width)} ${Math.ceil(boardRect.height)}`);
+      svg.setAttribute("preserveAspectRatio", "none");
+
+      for (const [fromSlot, toSlot] of edges) {
+        const fromCard = board.querySelector(`.game-card[data-slot="${fromSlot}"]`);
+        const toCard = board.querySelector(`.game-card[data-slot="${toSlot}"]`);
+        if (!fromCard || !toCard) continue;
+
+        const fromRect = fromCard.getBoundingClientRect();
+        const toRect = toCard.getBoundingClientRect();
+        const fromMidX = fromRect.left + fromRect.width / 2;
+        const toMidX = toRect.left + toRect.width / 2;
+        const leftToRight = toMidX >= fromMidX;
+
+        const x1 = leftToRight ? fromRect.right - boardRect.left : fromRect.left - boardRect.left;
+        const y1 = fromRect.top + fromRect.height / 2 - boardRect.top;
+        const x4 = leftToRight ? toRect.left - boardRect.left : toRect.right - boardRect.left;
+        const y4 = toRect.top + toRect.height / 2 - boardRect.top;
+        const midX = (x1 + x4) / 2;
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("class", "flow-path");
+        path.setAttribute("d", `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y4} L ${x4} ${y4}`);
+        svg.appendChild(path);
+      }
+
+      board.prepend(svg);
+    }
+
+    function scheduleFlowRedraw() {
+      if (state.flowRaf) cancelAnimationFrame(state.flowRaf);
+      state.flowRaf = requestAnimationFrame(() => {
+        const board = document.getElementById("bracketBoard");
+        if (!board || !state.lastFlowSlots.length) return;
+        drawBracketFlow(board, state.lastFlowSlots);
+      });
+    }
+
     function searchMatch(values) {
       const q = state.search.trim().toLowerCase();
       if (!q) return true;
@@ -966,6 +1072,7 @@
       };
 
       const columns = [];
+      const renderedSlots = [];
       for (const column of columnsMeta) {
         const gamesInColumn = Math.max(column.items.length, 1);
         const branchHalf = column.type === "center"
@@ -1007,8 +1114,9 @@
             ? `<span class="incoming ${incomingClass}" aria-hidden="true"></span>`
             : "";
 
+          renderedSlots.push(String(slotItem.slot));
           items.push(`
-            <article class="game-card" data-flow="${flow}" style="--game-top:${topPercent.toFixed(3)}%;--branch-half:${branchHalf.toFixed(1)}px;">
+            <article class="game-card" data-slot="${escapeAttr(String(slotItem.slot))}" data-flow="${flow}" style="--game-top:${topPercent.toFixed(3)}%;--branch-half:${branchHalf.toFixed(1)}px;">
               ${incomingMarkup}
               <div class="game-top">
                 <span>${escapeHtml(slotItem.slot)}</span>
@@ -1044,11 +1152,18 @@
       }
 
       if (!columns.length) {
+        state.lastFlowSlots = [];
         board.innerHTML = '<div class="empty">No bracket games match this filter.</div>';
         return;
       }
 
       board.innerHTML = columns.join("");
+      state.lastFlowSlots = renderedSlots;
+      scheduleFlowRedraw();
+      if (!state.flowResizeBound) {
+        window.addEventListener("resize", scheduleFlowRedraw);
+        state.flowResizeBound = true;
+      }
     }
 
     function render() {

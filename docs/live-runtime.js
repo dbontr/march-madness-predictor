@@ -945,6 +945,7 @@
 
     const probCache = new Map();
     const advancementCounts = new Map();
+    const slotWinnerCounts = new Map();
     const summaryAgg = new Map();
 
     function cachedProb(teamA, teamB) {
@@ -985,6 +986,8 @@
 
         const advKey = `${winner}||${row.round_order}`;
         advancementCounts.set(advKey, (advancementCounts.get(advKey) || 0) + 1);
+        const slotWinKey = `${slotName}||${winner}`;
+        slotWinnerCounts.set(slotWinKey, (slotWinnerCounts.get(slotWinKey) || 0) + 1);
 
         const aggKey = [
           slotName,
@@ -1059,7 +1062,18 @@
       const teamB = resolveTeam(row.team_b, projectedWinners);
       const baseProb = cachedProb(teamA, teamB);
       const adjustedProb = seedAdjustedProb(baseProb, snapshotMap, teamA, teamB, row.round_order);
-      const winner = lockedWinners[row.slot] || chooseWinnerFromProb(adjustedProb, teamA, teamB, snapshotMap);
+      let winner = lockedWinners[row.slot] || "";
+      if (!winner) {
+        const countA = slotWinnerCounts.get(`${row.slot}||${teamA}`) || 0;
+        const countB = slotWinnerCounts.get(`${row.slot}||${teamB}`) || 0;
+        if (countA > countB) {
+          winner = teamA;
+        } else if (countB > countA) {
+          winner = teamB;
+        } else {
+          winner = chooseWinnerFromProb(adjustedProb, teamA, teamB, snapshotMap);
+        }
+      }
       projectedWinners[row.slot] = winner;
 
       bestBracket.push({
