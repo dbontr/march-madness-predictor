@@ -24,7 +24,7 @@ This repo is now run-based, not batch-output-based.
 - Frontend UI: `docs/index.html`
 - Browser runtime engine: `docs/live-runtime.js`
 - Runtime data files: `docs/data/runtime/<season>/`
-- Legacy/offline scripts: `scripts/` and `src/server/` (optional, not required for live GitHub Pages runs)
+- Root redirect: `index.html` -> `./docs/` for repo-root Pages deployments
 
 ## GitHub Pages deploy
 
