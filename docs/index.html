@@ -611,6 +611,11 @@
           <div class="panel-title">Title Odds</div>
           <div id="titleOdds" class="odds-list"></div>
         </div>
+
+        <div>
+          <div class="panel-title">Portfolio Brackets</div>
+          <div id="portfolioBrackets" class="odds-list"></div>
+        </div>
       </aside>
 
       <section class="bracket-panel card">
@@ -646,6 +651,20 @@
         { slot: "R5_1", round_name: "Final Four", round_order: 5, winner: "Duke", is_locked: false },
         { slot: "TITLE", round_name: "Championship", round_order: 6, winner: "Duke", is_locked: false }
       ],
+      portfolio_brackets: [
+        {
+          rank: 1,
+          expected_points: 812,
+          leverage: 106,
+          picks: [{ slot: "TITLE", winner: "Florida" }]
+        },
+        {
+          rank: 2,
+          expected_points: 784,
+          leverage: 138,
+          picks: [{ slot: "TITLE", winner: "Duke" }]
+        }
+      ],
       matchups: [
         { slot: "R1_EAST_1", round_order: 1, round_name: "Round of 64", region: "EAST", team_a: "Duke", team_b: "Siena", p_team_a: 0.92, p_team_b: 0.08, team_a_win_rate: 0.92, team_b_win_rate: 0.08, winner: "Duke", is_locked: false, matchup_count: 3600, matchup_share: 0.72 },
         { slot: "R2_EAST_1", round_order: 2, round_name: "Round of 32", region: "EAST", team_a: "Duke", team_b: "TCU", p_team_a: 0.77, p_team_b: 0.23, team_a_win_rate: 0.77, team_b_win_rate: 0.23, winner: "Duke", is_locked: false, matchup_count: 2800, matchup_share: 0.56 },
@@ -679,6 +698,7 @@
         matchups: payload?.matchups || [],
         title_odds: payload?.title_odds || [],
         best_bracket: payload?.best_bracket || [],
+        portfolio_brackets: payload?.portfolio_brackets || [],
         team_logos: payload?.team_logos || {},
         team_seeds: payload?.team_seeds || {}
       };
@@ -720,6 +740,7 @@
         matchups: summary.matchups || [],
         title_odds: titleOdds.title_odds || [],
         best_bracket: bestBracket.best_bracket || [],
+        portfolio_brackets: [],
         team_logos: logos.team_logos || {}
       });
     }
@@ -936,9 +957,51 @@
       return values.join(" ").toLowerCase().includes(q);
     }
 
-    function pickRepresentativeMatchup(slot, winner) {
+    function teamKey(team) {
+      return String(team || "").trim().toLowerCase().replace(/\s+/g, " ");
+    }
+
+    function matchupHasTeams(item, teamA, teamB) {
+      const a = teamKey(item?.team_a);
+      const b = teamKey(item?.team_b);
+      const ta = teamKey(teamA);
+      const tb = teamKey(teamB);
+      return (a === ta && b === tb) || (a === tb && b === ta);
+    }
+
+    function matchupProbsForTeams(item, teamA, teamB) {
+      if (!item) return null;
+      const a = teamKey(item.team_a);
+      const b = teamKey(item.team_b);
+      const ta = teamKey(teamA);
+      const tb = teamKey(teamB);
+
+      if (a === ta && b === tb) {
+        return {
+          pA: Number(item.p_team_a),
+          pB: Number(item.p_team_b),
+        };
+      }
+      if (a === tb && b === ta) {
+        return {
+          pA: Number(item.p_team_b),
+          pB: Number(item.p_team_a),
+        };
+      }
+      return null;
+    }
+
+    function pickRepresentativeMatchup(slot, winner, expectedTeamA, expectedTeamB) {
       const candidates = state.matchupsBySlot.get(String(slot)) || [];
       if (!candidates.length) return null;
+
+      if (expectedTeamA && expectedTeamB) {
+        const exact = candidates.filter(item => matchupHasTeams(item, expectedTeamA, expectedTeamB));
+        if (exact.length) {
+          exact.sort((a, b) => Number(b.matchup_count ?? 0) - Number(a.matchup_count ?? 0));
+          return exact[0];
+        }
+      }
 
       let pool = candidates;
       if (winner) {
@@ -1014,6 +1077,35 @@
       `).join("");
     }
 
+    function renderPortfolioBrackets() {
+      const container = document.getElementById("portfolioBrackets");
+      const rows = (state.data.portfolio_brackets || [])
+        .filter(item => searchMatch([item.rank, item.expected_points, item.leverage, item.picks?.[0]?.winner]))
+        .slice(0, 6);
+
+      if (!rows.length) {
+        container.innerHTML = '<div class="empty">No portfolio brackets available.</div>';
+        return;
+      }
+
+      container.innerHTML = rows.map(item => {
+        const champion = (item.picks || []).find(p => String(p.slot) === "TITLE")?.winner || "TBD";
+        const expPoints = Number(item.expected_points || 0).toFixed(1);
+        const leverage = Number(item.leverage || 0).toFixed(1);
+        const objective = Number(item.objective || 0).toFixed(1);
+        return `
+          <div class="odds-row">
+            <div class="prob">#${escapeHtml(String(item.rank || "-"))}</div>
+            <div class="team-meta">
+              <div class="team-name">${logoMarkup(champion)}${escapeHtml(champion)}</div>
+              <div class="team-sub">Expected pts: ${escapeHtml(expPoints)} | Leverage: ${escapeHtml(leverage)}</div>
+            </div>
+            <div class="prob">${escapeHtml(objective)}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
     function renderBracketBoard() {
       const board = document.getElementById("bracketBoard");
       const best = state.data.best_bracket || [];
@@ -1083,12 +1175,21 @@
         for (let idx = 0; idx < column.items.length; idx += 1) {
           const slotItem = column.items[idx];
           const winner = String(slotItem.winner || "");
-          const rep = pickRepresentativeMatchup(slotItem.slot, winner);
+          const plannedTeamA = String(slotItem.team_a || "").trim();
+          const plannedTeamB = String(slotItem.team_b || "").trim();
+          const rep = pickRepresentativeMatchup(slotItem.slot, winner, plannedTeamA, plannedTeamB);
 
-          const teamA = String(rep?.team_a || winner || "TBD");
-          const teamB = String(rep?.team_b || "TBD");
-          const pA = Number(rep?.p_team_a);
-          const pB = Number(rep?.p_team_b);
+          const teamA = String(plannedTeamA || rep?.team_a || winner || "TBD");
+          const teamB = String(plannedTeamB || rep?.team_b || "TBD");
+          let pA = Number(slotItem.p_team_a);
+          let pB = Number(slotItem.p_team_b);
+          const repProbs = matchupProbsForTeams(rep, teamA, teamB);
+          if (repProbs) {
+            pA = repProbs.pA;
+            pB = repProbs.pB;
+          }
+          if (!Number.isFinite(pA) && Number.isFinite(pB)) pA = 1 - pB;
+          if (!Number.isFinite(pB) && Number.isFinite(pA)) pB = 1 - pA;
           const region = String(rep?.region || slotItem.region || "");
 
           if (!searchMatch([slotItem.slot, slotItem.round_name, winner, teamA, teamB, region])) {
@@ -1172,6 +1273,7 @@
     function render() {
       renderHeader();
       renderTitleOdds();
+      renderPortfolioBrackets();
       renderBracketBoard();
     }
 

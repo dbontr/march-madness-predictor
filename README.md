@@ -5,9 +5,10 @@ Live March Madness bracket predictions with a GitHub Pages-only runtime.
 On every page load (each run), the browser generates predictions fresh:
 
 1. fetches current ESPN tournament data
-2. trains the lightweight matchup model client-side
-3. simulates the bracket
-4. renders updated odds and the projected path
+2. applies data-quality guards (dedupe, score sanity, clipping, alias normalization)
+3. trains the ensemble matchup system client-side
+4. simulates the bracket and portfolio alternatives
+5. renders updated odds and the projected path
 
 No backend is required.
 
@@ -76,10 +77,22 @@ At runtime, `docs/live-runtime.js`:
 
 1. loads local runtime CSV files
 2. fetches NCAA scoreboard/event data from ESPN public JSON endpoints
-3. derives bracket slots and locks completed game winners
-4. trains and applies the matchup model
-5. runs Monte Carlo simulation
-6. renders bracket board + title odds + team logos
+3. runs data-quality guards against malformed rows, duplicate games, unknown teams, and outliers
+4. derives bracket slots and locks completed game winners
+5. computes weighted performance context (tempo-adjusted margins, recency, round importance, rolling form)
+6. trains an ensemble (logistic + tree + performance + continuous style interaction model)
+7. calibrates probabilities with round-aware calibrators (early vs late rounds)
+8. runs Monte Carlo simulation + portfolio bracket generation
+9. renders bracket board + title odds + team logos
+
+## Model Tuning + Backtests
+
+- Runtime backtest harness scores holdout seasons using ESPN-style round points.
+- Random-search tuning can optimize blend/shock parameters for expected bracket points.
+- Tuned params are cached in browser local storage to avoid rerunning every refresh.
+- Configure behavior in `docs/data/runtime/config.json` under:
+  - `model_params`
+  - `model_tuning`
 
 ## Raw data files
 
