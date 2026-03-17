@@ -759,6 +759,40 @@
     });
   }
 
+  function finiteOr(value, fallback = 0) {
+    return isFiniteNumber(value) ? Number(value) : fallback;
+  }
+
+  function clampProb(prob) {
+    const p = Number(prob);
+    if (!isFiniteNumber(p)) return 0.5;
+    if (p <= 1e-6) return 1e-6;
+    if (p >= 1 - 1e-6) return 1 - 1e-6;
+    return p;
+  }
+
+  function temperedProb(prob, factor = 0.9) {
+    const p = clampProb(prob);
+    const logit = Math.log(p / (1 - p));
+    return sigmoid(logit * factor);
+  }
+
+  function teamPowerScore(row) {
+    const seed = finiteOr(toNumber(row.seed), 8.5);
+    const net = finiteOr(toNumber(row.net_rating), 0);
+    const sos = finiteOr(toNumber(row.sos), 0);
+    const recent = finiteOr(toNumber(row.recent_form), 0.5);
+    const injuries = finiteOr(toNumber(row.injuries_impact), 0);
+
+    return (
+      0.72 * net +
+      0.5 * sos +
+      1.9 * (17 - seed) +
+      7 * (recent - 0.5) +
+      15 * injuries
+    );
+  }
+
   function predictMatchup(model, snapshotMap, teamA, teamB) {
     if (!teamA || !teamB || teamA === "TBD" || teamB === "TBD") {
       return 0.5;
@@ -774,7 +808,20 @@
     const seedGap = toNumber(rowB.seed) - toNumber(rowA.seed);
     const raw = [...diff, seedGap, 1];
     const transformed = transformFeatureVector(raw, model);
-    return sigmoid(dot(model.weights, transformed) + model.bias);
+    const modelProb = sigmoid(dot(model.weights, transformed) + model.bias);
+
+    const powerDelta = teamPowerScore(rowA) - teamPowerScore(rowB);
+    const powerProb = sigmoid(powerDelta / 8.5);
+
+    const seedA = toNumber(rowA.seed);
+    const seedB = toNumber(rowB.seed);
+    const seedProb =
+      isFiniteNumber(seedA) && isFiniteNumber(seedB)
+        ? sigmoid((seedB - seedA) * 0.22)
+        : 0.5;
+
+    const blended = 0.48 * modelProb + 0.37 * powerProb + 0.15 * seedProb;
+    return temperedProb(blended, 0.9);
   }
 
   class SeededRandom {
@@ -934,6 +981,8 @@
           team_a_win_rate: teamAWinRate,
           team_b_win_rate: 1 - teamAWinRate,
           winner: teamAWinRate >= 0.5 ? agg.team_a : agg.team_b,
+          matchup_count: agg.count,
+          matchup_share: agg.count / simulations,
           is_locked: agg.is_locked,
         };
       })
@@ -1147,6 +1196,15 @@
       .sort((a, b) => b.title_prob - a.title_prob)
       .slice(0, 16);
 
+    const teamSeeds = {};
+    snapshot.forEach((row) => {
+      const team = String(row.team || "").trim();
+      const seed = toNumber(row.seed);
+      if (team && isFiniteNumber(seed)) {
+        teamSeeds[team] = seed;
+      }
+    });
+
     return {
       meta: {
         season,
@@ -1159,6 +1217,7 @@
       title_odds: titleOdds,
       best_bracket: bestBracket,
       team_logos: teamLogos,
+      team_seeds: teamSeeds,
     };
   }
 

@@ -275,28 +275,22 @@
 
     .bracket-scroll {
       overflow-x: auto;
-      padding-bottom: 5px;
+      padding-bottom: 8px;
     }
 
     .bracket-grid {
+      --board-height: 2200px;
       display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: minmax(222px, 1fr);
-      gap: 12px;
-      min-width: 1580px;
+      grid-template-columns: repeat(var(--round-count, 6), minmax(216px, 1fr));
+      gap: 18px;
+      min-width: 1500px;
       align-items: start;
-      padding: 2px 2px 8px;
+      padding: 6px 6px 12px;
     }
 
     .round-col {
-      border-right: 1px dashed var(--line);
-      padding-right: 8px;
-      min-height: 100%;
-    }
-
-    .round-col:last-child {
-      border-right: 0;
-      padding-right: 0;
+      min-height: 0;
+      position: relative;
     }
 
     .round-head {
@@ -325,15 +319,9 @@
     }
 
     .round-games {
-      display: grid;
-      gap: 9px;
+      position: relative;
+      height: var(--board-height);
     }
-
-    .round-col[data-round="2"] .round-games { gap: 18px; }
-    .round-col[data-round="3"] .round-games { gap: 34px; }
-    .round-col[data-round="4"] .round-games { gap: 62px; }
-    .round-col[data-round="5"] .round-games { gap: 118px; padding-top: 78px; }
-    .round-col[data-round="6"] .round-games { gap: 0; padding-top: 152px; }
 
     .game-card {
       border: 1px solid var(--line);
@@ -341,14 +329,86 @@
       background: #fffdf8;
       box-shadow: 0 6px 16px rgba(42, 30, 14, 0.08);
       overflow: hidden;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: var(--game-top, 50%);
+      transform: translateY(-50%);
+    }
+
+    .game-card::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -18px;
+      width: 18px;
+      border-top: 1px solid var(--line-strong);
+      opacity: 0.85;
+    }
+
+    .round-col[data-round="6"] .game-card::after {
+      display: none;
+    }
+
+    .incoming {
+      display: none;
+    }
+
+    .round-col[data-round="2"] .incoming,
+    .round-col[data-round="3"] .incoming,
+    .round-col[data-round="4"] .incoming,
+    .round-col[data-round="5"] .incoming,
+    .round-col[data-round="6"] .incoming {
+      display: block;
+      position: absolute;
+      top: 50%;
+      left: -18px;
+      width: 18px;
+      border-top: 1px solid var(--line-strong);
+      opacity: 0.85;
+    }
+
+    .round-col[data-round="2"] .incoming::before,
+    .round-col[data-round="3"] .incoming::before,
+    .round-col[data-round="4"] .incoming::before,
+    .round-col[data-round="5"] .incoming::before,
+    .round-col[data-round="6"] .incoming::before,
+    .round-col[data-round="2"] .incoming::after,
+    .round-col[data-round="3"] .incoming::after,
+    .round-col[data-round="4"] .incoming::after,
+    .round-col[data-round="5"] .incoming::after,
+    .round-col[data-round="6"] .incoming::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      border-left: 1px solid var(--line-strong);
+      width: 0;
+      height: var(--branch-half, 22px);
+      opacity: 0.85;
+    }
+
+    .round-col[data-round="2"] .incoming::before,
+    .round-col[data-round="3"] .incoming::before,
+    .round-col[data-round="4"] .incoming::before,
+    .round-col[data-round="5"] .incoming::before,
+    .round-col[data-round="6"] .incoming::before {
+      top: calc(-1 * var(--branch-half, 22px));
+    }
+
+    .round-col[data-round="2"] .incoming::after,
+    .round-col[data-round="3"] .incoming::after,
+    .round-col[data-round="4"] .incoming::after,
+    .round-col[data-round="5"] .incoming::after,
+    .round-col[data-round="6"] .incoming::after {
+      top: 0;
     }
 
     .game-top {
       display: flex;
       justify-content: space-between;
       gap: 7px;
-      padding: 6px 8px;
-      font-size: 0.72rem;
+      padding: 5px 8px;
+      font-size: 0.68rem;
       font-family: var(--mono);
       color: var(--muted);
       background: #f7efe0;
@@ -360,7 +420,7 @@
       grid-template-columns: auto 1fr auto;
       gap: 7px;
       align-items: center;
-      padding: 7px 8px;
+      padding: 6px 8px;
       border-top: 1px solid rgba(216, 204, 184, 0.55);
     }
 
@@ -384,6 +444,23 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .seed-tag {
+      display: inline-grid;
+      place-items: center;
+      min-width: 20px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #f2e6d2;
+      color: #5f4825;
+      font-size: 0.66rem;
+      font-family: var(--mono);
+      padding: 0 5px;
     }
 
     .team-pct {
@@ -434,9 +511,26 @@
         grid-template-columns: 1fr;
       }
 
-      .round-col[data-round="5"] .round-games,
-      .round-col[data-round="6"] .round-games {
-        padding-top: 0;
+      .bracket-grid {
+        min-width: 0;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .round-games {
+        height: auto;
+        display: grid;
+        gap: 8px;
+      }
+
+      .game-card {
+        position: static;
+        transform: none;
+      }
+
+      .incoming,
+      .game-card::after {
+        display: none !important;
       }
     }
   </style>
@@ -480,8 +574,8 @@
       </aside>
 
       <section class="bracket-panel card">
-        <div class="panel-title">Bracket Board</div>
-        <div class="board-note">Each card shows the predicted matchup for that slot with the winning team highlighted.</div>
+        <div class="panel-title">Bracket Tree</div>
+        <div class="board-note">Cleaner tree view with the projected path and matchup odds by round.</div>
         <div class="bracket-scroll">
           <div id="bracketBoard" class="bracket-grid"></div>
         </div>
@@ -513,11 +607,12 @@
         { slot: "TITLE", round_name: "Championship", round_order: 6, winner: "Duke", is_locked: false }
       ],
       matchups: [
-        { slot: "R1_EAST_1", round_order: 1, round_name: "Round of 64", region: "EAST", team_a: "Duke", team_b: "Siena", p_team_a: 0.92, p_team_b: 0.08, team_a_win_rate: 0.92, team_b_win_rate: 0.08, winner: "Duke", is_locked: false },
-        { slot: "R2_EAST_1", round_order: 2, round_name: "Round of 32", region: "EAST", team_a: "Duke", team_b: "TCU", p_team_a: 0.77, p_team_b: 0.23, team_a_win_rate: 0.77, team_b_win_rate: 0.23, winner: "Duke", is_locked: false },
-        { slot: "TITLE", round_order: 6, round_name: "Championship", region: "TITLE", team_a: "Duke", team_b: "Florida", p_team_a: 0.49, p_team_b: 0.51, team_a_win_rate: 0.49, team_b_win_rate: 0.51, winner: "Florida", is_locked: false }
+        { slot: "R1_EAST_1", round_order: 1, round_name: "Round of 64", region: "EAST", team_a: "Duke", team_b: "Siena", p_team_a: 0.92, p_team_b: 0.08, team_a_win_rate: 0.92, team_b_win_rate: 0.08, winner: "Duke", is_locked: false, matchup_count: 3600, matchup_share: 0.72 },
+        { slot: "R2_EAST_1", round_order: 2, round_name: "Round of 32", region: "EAST", team_a: "Duke", team_b: "TCU", p_team_a: 0.77, p_team_b: 0.23, team_a_win_rate: 0.77, team_b_win_rate: 0.23, winner: "Duke", is_locked: false, matchup_count: 2800, matchup_share: 0.56 },
+        { slot: "TITLE", round_order: 6, round_name: "Championship", region: "TITLE", team_a: "Duke", team_b: "Florida", p_team_a: 0.49, p_team_b: 0.51, team_a_win_rate: 0.49, team_b_win_rate: 0.51, winner: "Florida", is_locked: false, matchup_count: 1400, matchup_share: 0.28 }
       ],
-      team_logos: {}
+      team_logos: {},
+      team_seeds: { Florida: 1, Wisconsin: 5, Illinois: 2, Duke: 1, Siena: 16, TCU: 8 }
     };
 
     const state = {
@@ -541,7 +636,8 @@
         matchups: payload?.matchups || [],
         title_odds: payload?.title_odds || [],
         best_bracket: payload?.best_bracket || [],
-        team_logos: payload?.team_logos || {}
+        team_logos: payload?.team_logos || {},
+        team_seeds: payload?.team_seeds || {}
       };
     }
 
@@ -654,6 +750,13 @@
       return (words[0][0] + words[1][0]).toUpperCase();
     }
 
+    function seedTagMarkup(team) {
+      const seedRaw = state.data.team_seeds?.[String(team || "")];
+      const seedNum = Number(seedRaw);
+      if (!Number.isFinite(seedNum)) return "";
+      return `<span class="seed-tag">${escapeHtml(String(seedNum))}</span>`;
+    }
+
     function logoMarkup(team) {
       const clean = String(team || "TBD");
       const logo = state.data.team_logos?.[clean];
@@ -717,9 +820,11 @@
       }
 
       let chosen = pool[0];
+      let bestCount = -1;
       let bestScore = -1;
 
       for (const item of pool) {
+        const count = Number(item.matchup_count ?? 0);
         const aRate = Number(item.team_a_win_rate ?? 0);
         const bRate = Number(item.team_b_win_rate ?? 0);
         let score = Math.max(aRate, bRate);
@@ -729,7 +834,8 @@
           else if (String(item.team_b) === String(winner)) score = bRate;
         }
 
-        if (score > bestScore) {
+        if (count > bestCount || (count === bestCount && score > bestScore)) {
+          bestCount = count;
           bestScore = score;
           chosen = item;
         }
@@ -790,7 +896,12 @@
         return;
       }
 
-      const rounds = [...new Set(best.map(item => Number(item.round_order ?? -1)).filter(v => v >= 0))].sort((a, b) => a - b);
+      const rounds = [...new Set(best.map(item => Number(item.round_order ?? -1)).filter(v => v >= 1))].sort((a, b) => a - b);
+      board.style.setProperty("--round-count", String(Math.max(rounds.length, 1)));
+
+      const roundOneGames = best.filter(item => Number(item.round_order) === 1).length;
+      const boardHeight = Math.max(1680, roundOneGames * 70);
+      board.style.setProperty("--board-height", `${boardHeight}px`);
 
       const columns = [];
       for (const roundOrder of rounds) {
@@ -798,8 +909,12 @@
           .filter(item => Number(item.round_order) === roundOrder)
           .sort((a, b) => compareSlots(a.slot, b.slot));
 
+        const gamesInRound = Math.max(rawItems.length, 1);
+        const branchHalf = Math.max(14, boardHeight / (4 * gamesInRound));
+
         const items = [];
-        for (const slotItem of rawItems) {
+        for (let idx = 0; idx < rawItems.length; idx += 1) {
+          const slotItem = rawItems[idx];
           const winner = String(slotItem.winner || "");
           const rep = pickRepresentativeMatchup(slotItem.slot, winner);
 
@@ -815,21 +930,23 @@
 
           const aWinner = winner && teamA === winner;
           const bWinner = winner && teamB === winner;
+          const topPercent = ((idx + 0.5) / gamesInRound) * 100;
 
           items.push(`
-            <article class="game-card">
+            <article class="game-card" style="--game-top:${topPercent.toFixed(3)}%;--branch-half:${branchHalf.toFixed(1)}px;">
+              <span class="incoming" aria-hidden="true"></span>
               <div class="game-top">
                 <span>${escapeHtml(slotItem.slot)}</span>
                 <span>${escapeHtml(region || slotItem.round_name || "")}</span>
               </div>
               <div class="team-row ${aWinner ? "winner" : ""} ${slotItem.is_locked ? "locked" : ""}">
                 ${logoMarkup(teamA)}
-                <span class="team-label">${escapeHtml(teamA)}</span>
+                <span class="team-label">${seedTagMarkup(teamA)}${escapeHtml(teamA)}</span>
                 <span class="team-pct">${pct(pA)}</span>
               </div>
               <div class="team-row ${bWinner ? "winner" : ""} ${slotItem.is_locked ? "locked" : ""}">
                 ${logoMarkup(teamB)}
-                <span class="team-label">${escapeHtml(teamB)}</span>
+                <span class="team-label">${seedTagMarkup(teamB)}${escapeHtml(teamB)}</span>
                 <span class="team-pct">${pct(pB)}</span>
               </div>
             </article>
