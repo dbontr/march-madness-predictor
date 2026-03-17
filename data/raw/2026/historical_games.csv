@@ -1,0 +1,1501 @@
+season,team_a,team_b,score_a,score_b,neutral_site,round_name
+2024,Iowa State,UCLA,85,74,1,Regular Season
+2024,Akron,N Dakota St,64,68,1,Regular Season
+2024,Villanova,Kennesaw St,77,67,1,Regular Season
+2024,Villanova,High Point,59,66,1,Regular Season
+2024,Ohio State,Villanova,76,69,1,Regular Season
+2024,Long Island,Iowa,69,83,1,Regular Season
+2024,Siena,Iowa State,70,69,1,Regular Season
+2024,Wright St,Akron,68,75,1,Regular Season
+2024,Purdue,VCU,66,70,1,Regular Season
+2024,Arizona,Hofstra,63,83,1,Regular Season
+2024,Santa Clara,Penn,69,85,1,Regular Season
+2024,Michigan,Duke,63,70,1,Regular Season
+2024,Michigan,Georgia,68,64,1,Regular Season
+2024,Georgia,VCU,60,46,1,Regular Season
+2024,Florida,Howard,84,56,1,Regular Season
+2024,Howard,UMBC,53,71,1,Regular Season
+2024,Kansas,N Dakota St,74,51,1,Regular Season
+2024,Wright St,Texas A&M,66,84,1,Regular Season
+2024,McNeese,Long Island,67,58,1,Regular Season
+2024,Penn,Tennessee,61,62,1,Regular Season
+2024,Siena,Troy,82,67,1,Regular Season
+2024,Wisconsin,UCF,73,67,1,Regular Season
+2024,Houston,Michigan St,76,60,1,Regular Season
+2024,Miami,Florida,60,82,1,Regular Season
+2024,SMU,Arizona,74,50,1,Regular Season
+2024,Miami OH,Miami,67,74,1,Regular Season
+2024,Akron,Furman,60,64,1,Regular Season
+2024,Duke,Miami OH,96,68,1,Regular Season
+2024,Florida,BYU,64,61,1,Regular Season
+2024,Queens,Furman,60,79,1,Regular Season
+2024,Virginia,Michigan,74,68,1,Regular Season
+2024,Nebraska,VCU,70,59,1,Regular Season
+2024,McNeese,Howard,69,77,1,Regular Season
+2024,UMBC,Michigan St,61,57,1,Regular Season
+2024,UMBC,Tennessee St,83,60,1,Regular Season
+2024,Lehigh,Hawai'i,66,54,1,Regular Season
+2024,Hawai'i,Texas Tech,54,81,1,Regular Season
+2024,Saint Mary's,Texas A&M,82,75,1,Regular Season
+2024,Tennessee St,UConn,61,72,1,Regular Season
+2024,Clemson,Hawai'i,74,76,1,Regular Season
+2024,Duke,Tennessee,77,78,1,Regular Season
+2024,SMU,High Point,73,82,1,Regular Season
+2024,Michigan St,Lehigh,76,58,1,Regular Season
+2024,Lehigh,UCF,57,74,1,Regular Season
+2024,Idaho,Texas A&M,72,65,1,Regular Season
+2024,Kentucky,Nebraska,60,74,1,Regular Season
+2024,UConn,Michigan St,58,52,1,Regular Season
+2024,Furman,Troy,67,57,1,Regular Season
+2024,Hawai'i,Clemson,48,68,1,Regular Season
+2024,Alabama,Gonzaga,49,71,1,Regular Season
+2024,Michigan,Kansas,80,79,1,Regular Season
+2024,Tennessee St,VCU,63,75,1,Regular Season
+2024,Utah State,McNeese,72,66,1,Regular Season
+2024,Tennessee,Duke,56,65,1,Regular Season
+2024,Kansas,South Florida,85,73,1,Regular Season
+2024,Akron,St John's,51,73,1,Regular Season
+2024,N Dakota St,UCLA,55,70,1,Regular Season
+2024,North Carolina,Texas A&M,73,55,1,Regular Season
+2024,VCU,Iowa,87,63,1,Regular Season
+2024,Lehigh,Northern Iowa,75,74,1,Regular Season
+2024,McNeese,Duke,63,67,1,Regular Season
+2024,Duke,Prairie View,71,66,1,Regular Season
+2024,Duke,Clemson,77,60,1,Regular Season
+2024,Utah State,Villanova,53,74,1,Regular Season
+2024,Wright St,Iowa State,57,78,1,Regular Season
+2024,Duke,Virginia,74,45,1,Regular Season
+2024,Georgia,Kentucky,78,76,1,Regular Season
+2024,Florida,Michigan,78,54,1,Regular Season
+2024,Tennessee,Houston,74,69,1,Regular Season
+2024,Michigan St,CA Baptist,74,61,1,Regular Season
+2024,Georgia,Texas,56,50,1,Regular Season
+2024,Wisconsin,Prairie View,75,62,1,Regular Season
+2024,N Dakota St,Louisville,75,86,1,Regular Season
+2024,Prairie View,Michigan,58,73,1,Regular Season
+2024,N Dakota St,TCU,70,56,1,Regular Season
+2024,Howard,Ohio State,60,74,1,Regular Season
+2024,UCLA,Prairie View,76,62,1,Regular Season
+2024,Furman,Alabama,55,74,1,Regular Season
+2024,UCLA,Hawai'i,70,65,1,Regular Season
+2024,Furman,McNeese,75,66,1,Regular Season
+2024,Villanova,N Dakota St,71,78,1,Regular Season
+2024,Howard,Saint Louis,73,79,1,Regular Season
+2024,Florida,Michigan St,79,70,1,Regular Season
+2024,Siena,North Carolina,73,79,1,Regular Season
+2024,Iowa State,Troy,77,58,1,Regular Season
+2024,Ohio State,Wright St,91,56,1,Regular Season
+2024,Alabama,Ohio State,66,55,1,Regular Season
+2024,High Point,Idaho,68,71,1,Regular Season
+2024,N Dakota St,Hofstra,62,67,1,Regular Season
+2024,High Point,Iowa,85,70,1,Regular Season
+2024,NC State,North Carolina,55,67,1,Regular Season
+2024,Louisville,SMU,62,64,1,Regular Season
+2024,Louisville,N Dakota St,68,63,1,Regular Season
+2024,Villanova,VCU,61,60,1,Regular Season
+2024,Missouri,Clemson,62,68,1,Regular Season
+2024,Gonzaga,Texas A&M,72,88,1,Regular Season
+2024,Nebraska,CA Baptist,78,53,1,Regular Season
+2024,Akron,Queens,62,61,1,Regular Season
+2024,Howard,N Dakota St,88,71,1,Regular Season
+2024,Iowa State,Troy,82,66,1,Regular Season
+2024,Texas A&M,Alabama,56,64,1,Regular Season
+2024,Hofstra,Furman,66,71,1,Regular Season
+2024,Iowa,BYU,58,75,1,Regular Season
+2024,Siena,Illinois,64,71,1,Regular Season
+2024,Texas Tech,Howard,69,54,1,Regular Season
+2024,CA Baptist,Penn,54,67,1,Regular Season
+2024,Santa Clara,CA Baptist,63,48,1,Regular Season
+2024,Saint Mary's,Louisville,81,72,1,Regular Season
+2024,Michigan St,High Point,49,56,1,Regular Season
+2024,Saint Mary's,Tennessee St,70,66,1,Regular Season
+2024,Iowa,Michigan,54,76,1,Regular Season
+2024,Iowa State,Kennesaw St,86,58,1,Regular Season
+2024,Tennessee St,Arkansas,50,67,1,Regular Season
+2024,Kennesaw St,Queens,64,69,1,Regular Season
+2024,Tennessee St,Michigan St,61,69,1,Regular Season
+2024,NC State,Iowa State,73,86,1,Regular Season
+2024,High Point,South Florida,75,60,1,Regular Season
+2024,BYU,UMBC,69,62,1,Regular Season
+2024,Miami,Long Island,74,54,1,Regular Season
+2024,UCLA,Saint Louis,70,67,1,Regular Season
+2024,Penn,Miami OH,61,60,1,Regular Season
+2024,Miami,Arkansas,69,66,1,Regular Season
+2024,Lehigh,Tennessee,62,67,1,Regular Season
+2024,Queens,Nebraska,63,62,1,Regular Season
+2024,Florida,Nebraska,66,49,1,Regular Season
+2024,Saint Louis,Virginia,73,69,1,Regular Season
+2024,Tennessee,Queens,69,72,1,Regular Season
+2024,Arkansas,Hofstra,61,49,1,Regular Season
+2024,N Dakota St,Kennesaw St,54,52,1,Regular Season
+2024,N Dakota St,BYU,66,90,1,Regular Season
+2024,High Point,Texas Tech,58,64,1,Regular Season
+2024,Saint Louis,Prairie View,81,80,1,Regular Season
+2024,Texas Tech,Virginia,55,68,1,Regular Season
+2024,Hofstra,St John's,85,73,1,Regular Season
+2024,Lehigh,Missouri,57,64,1,Regular Season
+2024,CA Baptist,Texas Tech,81,74,1,Regular Season
+2024,Akron,Wisconsin,64,63,1,Regular Season
+2024,Long Island,Santa Clara,63,72,1,Regular Season
+2024,Texas Tech,Florida,78,75,1,Regular Season
+2024,Queens,Prairie View,65,58,1,Regular Season
+2024,Houston,Ohio State,77,62,1,Regular Season
+2024,Villanova,Penn,82,71,1,Regular Season
+2024,Tennessee St,Purdue,57,79,1,Regular Season
+2024,Tennessee,Northern Iowa,60,57,1,Regular Season
+2024,Howard,Lehigh,85,81,1,Regular Season
+2024,Texas,South Florida,56,80,1,Regular Season
+2024,Kennesaw St,Ohio State,69,68,1,Regular Season
+2024,Tennessee,Akron,62,58,1,Regular Season
+2024,Ohio State,North Carolina,60,66,1,Regular Season
+2024,Louisville,Texas Tech,61,89,1,Regular Season
+2024,Purdue,UConn,70,67,1,Regular Season
+2024,Troy,McNeese,75,74,1,Regular Season
+2024,Virginia,UMBC,76,71,1,Regular Season
+2024,Kansas,Georgia,75,77,1,Regular Season
+2024,North Carolina,Virginia,74,64,1,Regular Season
+2024,Queens,Gonzaga,57,83,1,Regular Season
+2024,Michigan,Penn,64,65,1,Regular Season
+2024,Miami,Long Island,63,62,1,Regular Season
+2024,Illinois,Arkansas,90,62,1,Regular Season
+2024,CA Baptist,Michigan St,65,56,1,Regular Season
+2024,UMBC,Furman,61,60,1,Regular Season
+2024,UCLA,Texas,63,62,1,Regular Season
+2024,Lehigh,St John's,67,64,1,Regular Season
+2024,Vanderbilt,Tennessee,75,68,1,Regular Season
+2024,Michigan St,Illinois,70,48,1,Regular Season
+2024,Akron,High Point,76,74,1,Regular Season
+2024,Texas A&M,Miami,68,80,1,Regular Season
+2024,Kennesaw St,Wisconsin,64,69,1,Regular Season
+2024,UConn,Clemson,63,64,1,Regular Season
+2024,Michigan St,Houston,79,57,1,Regular Season
+2024,UCLA,Idaho,70,56,1,Regular Season
+2024,UConn,Wright St,80,68,1,Regular Season
+2024,Prairie View,Troy,61,70,1,Regular Season
+2024,Villanova,Texas A&M,72,65,1,Regular Season
+2024,UCF,Iowa State,67,74,1,Regular Season
+2024,UMBC,UCF,73,72,1,Regular Season
+2024,N Dakota St,Michigan St,56,77,1,Regular Season
+2024,Nebraska,Wisconsin,81,66,1,Regular Season
+2024,VCU,Michigan,59,82,1,Regular Season
+2024,Nebraska,Troy,65,71,1,Regular Season
+2024,Furman,North Carolina,67,58,1,Regular Season
+2024,Michigan,NC State,77,69,1,Regular Season
+2024,Queens,Prairie View,56,73,1,Regular Season
+2024,Georgia,Idaho,66,62,1,Regular Season
+2024,Iowa,Miami OH,71,74,1,Regular Season
+2024,St John's,Iowa,76,64,1,Regular Season
+2024,McNeese,Florida,62,78,1,Regular Season
+2024,Texas,Tennessee St,72,69,1,Regular Season
+2024,Queens,UConn,58,75,1,Regular Season
+2024,Texas,Duke,55,80,1,Regular Season
+2024,Louisville,Texas,60,63,1,Regular Season
+2024,St John's,Arizona,72,67,1,Regular Season
+2024,South Florida,Utah State,71,60,1,Regular Season
+2024,Akron,Saint Mary's,73,70,1,Regular Season
+2024,Ohio State,St John's,65,61,1,Regular Season
+2024,Texas,Miami,70,71,1,Regular Season
+2024,VCU,Miami,55,56,1,Regular Season
+2024,NC State,Texas Tech,74,89,1,Regular Season
+2024,VCU,Arkansas,61,66,1,Regular Season
+2024,St John's,SMU,72,68,1,Regular Season
+2024,Tennessee,Kansas,69,52,1,Regular Season
+2024,UConn,Howard,83,60,1,Regular Season
+2024,Arkansas,TCU,69,71,1,Regular Season
+2024,Arkansas,Georgia,79,67,1,Regular Season
+2024,Texas A&M,Idaho,66,80,1,Regular Season
+2024,UConn,Kentucky,73,64,1,Regular Season
+2024,Clemson,N Dakota St,73,62,1,Regular Season
+2024,South Florida,Purdue,73,62,1,Regular Season
+2024,McNeese,UCLA,56,75,1,Regular Season
+2024,Purdue,SMU,76,75,1,Regular Season
+2024,South Florida,Nebraska,62,63,1,Regular Season
+2024,Texas,Missouri,81,58,1,Regular Season
+2024,Georgia,UMBC,72,62,1,Regular Season
+2024,Arizona,Clemson,74,72,1,Regular Season
+2024,Saint Louis,Miami,82,67,1,Regular Season
+2024,Florida,CA Baptist,78,54,1,Regular Season
+2024,Arkansas,Michigan St,64,76,1,Regular Season
+2024,Long Island,Arizona,66,67,1,Regular Season
+2024,Iowa,Michigan,76,78,1,Regular Season
+2024,Howard,UMBC,55,71,1,Regular Season
+2024,Hofstra,McNeese,71,69,1,Regular Season
+2024,UConn,Missouri,79,73,1,Regular Season
+2024,Siena,Kansas,70,66,1,Regular Season
+2024,Hofstra,Iowa State,48,72,1,Regular Season
+2024,Penn,High Point,52,58,1,Regular Season
+2024,Arkansas,Penn,72,62,1,Regular Season
+2024,South Florida,TCU,99,64,1,Regular Season
+2024,Long Island,Furman,62,73,1,Regular Season
+2024,Michigan St,High Point,81,75,1,Regular Season
+2024,Ohio State,Houston,48,66,1,Regular Season
+2024,CA Baptist,Saint Louis,65,78,1,Regular Season
+2024,Texas A&M,Siena,76,73,1,Regular Season
+2024,Florida,Villanova,51,57,1,Regular Season
+2024,SMU,Alabama,65,61,1,Regular Season
+2024,Texas,VCU,58,80,1,Regular Season
+2024,High Point,Texas Tech,72,63,1,Regular Season
+2024,Santa Clara,UCLA,62,72,1,Regular Season
+2024,Iowa,Texas Tech,52,68,1,Regular Season
+2024,Kennesaw St,Wisconsin,63,79,1,Regular Season
+2024,NC State,Utah State,67,71,1,Regular Season
+2024,UConn,Texas Tech,63,71,1,Regular Season
+2024,NC State,Purdue,52,86,1,Regular Season
+2024,Michigan St,Gonzaga,63,55,1,Regular Season
+2024,Nebraska,UCF,69,71,1,Regular Season
+2024,Michigan St,UConn,69,62,1,Regular Season
+2024,South Florida,SMU,52,60,1,Regular Season
+2024,Arkansas,Vanderbilt,81,80,1,Regular Season
+2024,Purdue,Kentucky,71,65,1,Regular Season
+2024,VCU,McNeese,70,66,1,Regular Season
+2024,Saint Mary's,N Dakota St,72,74,1,Regular Season
+2024,SMU,Nebraska,66,70,1,Regular Season
+2024,Nebraska,Alabama,72,80,1,Regular Season
+2024,Wisconsin,Lehigh,74,55,1,Regular Season
+2024,Georgia,Michigan,66,65,1,Regular Season
+2024,Tennessee St,VCU,56,70,1,Regular Season
+2024,Michigan,UMBC,66,76,1,Regular Season
+2024,VCU,UCF,48,73,1,Regular Season
+2024,Arizona,Gonzaga,52,83,1,Regular Season
+2024,Northern Iowa,Miami,64,68,1,Regular Season
+2024,Tennessee,Michigan St,55,67,1,Regular Season
+2024,Penn,Siena,68,62,1,Regular Season
+2024,UMBC,Wright St,69,56,1,Regular Season
+2024,Saint Louis,Texas A&M,79,73,1,Regular Season
+2024,Queens,Saint Mary's,68,63,1,Regular Season
+2024,UCLA,NC State,75,58,1,Regular Season
+2024,Penn,Missouri,67,65,1,Regular Season
+2024,Miami OH,Houston,65,74,1,Regular Season
+2024,Lehigh,Prairie View,54,70,1,Regular Season
+2024,Houston,Kentucky,53,64,1,Regular Season
+2024,Lehigh,McNeese,61,77,1,Regular Season
+2024,Utah State,Nebraska,61,81,1,Regular Season
+2024,Wright St,North Carolina,46,66,1,Regular Season
+2024,Hawai'i,Lehigh,77,69,1,Regular Season
+2024,Northern Iowa,Miami OH,66,75,1,Regular Season
+2024,Santa Clara,Kennesaw St,66,71,1,Regular Season
+2024,Ohio State,Alabama,48,66,1,Regular Season
+2024,Howard,Nebraska,58,77,1,Regular Season
+2024,CA Baptist,Clemson,54,67,1,Regular Season
+2024,Northern Iowa,Howard,69,70,1,Regular Season
+2024,VCU,High Point,64,75,1,Regular Season
+2024,Alabama,North Carolina,70,80,1,Regular Season
+2024,UMBC,Utah State,66,76,1,Regular Season
+2024,Troy,SMU,73,69,1,Regular Season
+2024,Kentucky,Clemson,62,67,1,Regular Season
+2024,Missouri,Utah State,65,54,1,Regular Season
+2024,Hofstra,Florida,56,75,1,Regular Season
+2024,Tennessee,VCU,79,62,1,Regular Season
+2024,Furman,Clemson,60,72,1,Regular Season
+2024,Iowa,Ohio State,57,70,1,Regular Season
+2024,Georgia,Michigan St,61,59,1,Regular Season
+2024,Houston,Texas,84,62,1,Regular Season
+2024,Miami,Wisconsin,67,63,1,Regular Season
+2024,South Florida,UCF,57,62,1,Regular Season
+2024,Troy,Ohio State,65,77,1,Regular Season
+2024,Texas A&M,Penn,67,56,1,Regular Season
+2024,Duke,Hawai'i,74,61,1,Regular Season
+2024,Louisville,McNeese,67,76,1,Regular Season
+2024,N Dakota St,Georgia,61,73,1,Regular Season
+2024,Iowa State,Michigan,62,64,1,Regular Season
+2024,Kennesaw St,Furman,65,69,1,Regular Season
+2024,Iowa State,Akron,68,59,1,Regular Season
+2024,Tennessee St,UCF,73,83,1,Regular Season
+2024,UMBC,Northern Iowa,77,71,1,Regular Season
+2024,BYU,Miami OH,68,70,1,Regular Season
+2024,North Carolina,UCLA,56,62,1,Regular Season
+2024,Furman,Miami OH,74,76,1,Regular Season
+2024,N Dakota St,Long Island,75,63,1,Regular Season
+2024,Texas A&M,Hofstra,58,76,1,Regular Season
+2024,Miami,Iowa,72,66,1,Regular Season
+2024,NC State,Illinois,46,79,1,Regular Season
+2024,Furman,Duke,65,77,1,Regular Season
+2024,Kansas,Penn,56,78,1,Regular Season
+2024,North Carolina,Troy,81,65,1,Regular Season
+2024,Houston,UConn,72,71,1,Regular Season
+2024,Ohio State,Tennessee,52,61,1,Regular Season
+2024,NC State,Villanova,66,82,1,Regular Season
+2024,Vanderbilt,Troy,81,63,1,Regular Season
+2024,Georgia,CA Baptist,74,67,1,Regular Season
+2024,Texas Tech,Purdue,68,67,1,Regular Season
+2024,Missouri,Arkansas,70,54,1,Regular Season
+2024,Gonzaga,Miami OH,82,50,1,Regular Season
+2024,Arizona,NC State,71,48,1,Regular Season
+2024,CA Baptist,Kennesaw St,66,62,1,Regular Season
+2024,UMBC,Wisconsin,59,79,1,Regular Season
+2024,Troy,Nebraska,61,65,1,Regular Season
+2024,Kentucky,Texas Tech,56,79,1,Regular Season
+2024,VCU,Gonzaga,65,78,1,Regular Season
+2024,UMBC,Saint Louis,71,64,1,Regular Season
+2024,Tennessee St,Queens,76,63,1,Regular Season
+2024,Purdue,High Point,54,63,1,Regular Season
+2024,Iowa State,Queens,71,61,1,Regular Season
+2024,Tennessee St,Vanderbilt,72,70,1,Regular Season
+2024,North Carolina,Tennessee,67,72,1,Regular Season
+2024,BYU,UCLA,82,72,1,Regular Season
+2024,Gonzaga,Prairie View,83,63,1,Regular Season
+2024,Missouri,Purdue,68,72,1,Regular Season
+2024,Hofstra,Tennessee,64,56,1,Regular Season
+2024,Virginia,Akron,64,63,1,Regular Season
+2024,UConn,Tennessee St,86,64,1,Regular Season
+2024,Clemson,Lehigh,56,51,1,Regular Season
+2024,Wisconsin,Santa Clara,74,72,1,Regular Season
+2024,Vanderbilt,Troy,75,66,1,Regular Season
+2024,Clemson,Louisville,60,61,1,Regular Season
+2024,NC State,Howard,64,62,1,Regular Season
+2024,North Carolina,Troy,90,53,1,Regular Season
+2024,VCU,Houston,59,70,1,Regular Season
+2024,Arkansas,Michigan,62,71,1,Regular Season
+2024,Iowa State,Penn,80,59,1,Regular Season
+2024,Alabama,Tennessee St,83,75,1,Regular Season
+2024,Gonzaga,Miami,79,66,1,Regular Season
+2024,Hofstra,UConn,62,78,1,Regular Season
+2024,Houston,Iowa,62,51,1,Regular Season
+2024,Vanderbilt,Northern Iowa,88,64,1,Regular Season
+2024,Virginia,NC State,65,57,1,Regular Season
+2024,Texas,Utah State,69,68,1,Regular Season
+2024,UMBC,Michigan St,68,70,1,Regular Season
+2024,UCLA,Illinois,79,74,1,Regular Season
+2024,St John's,Lehigh,69,54,1,Regular Season
+2024,Virginia,Idaho,87,69,1,Regular Season
+2024,Florida,Nebraska,77,45,1,Regular Season
+2024,Texas,SMU,53,58,1,Regular Season
+2024,Villanova,NC State,74,56,1,Regular Season
+2024,Akron,North Carolina,67,60,1,Regular Season
+2024,Ohio State,VCU,59,72,1,Regular Season
+2024,Iowa,UCF,58,87,1,Regular Season
+2024,Utah State,Saint Louis,56,80,1,Regular Season
+2024,Queens,South Florida,54,79,1,Regular Season
+2024,UCLA,Purdue,79,61,1,Regular Season
+2024,Lehigh,Michigan,56,79,1,Regular Season
+2024,St John's,Miami OH,75,67,1,Regular Season
+2024,Tennessee St,CA Baptist,64,80,1,Regular Season
+2024,Prairie View,UMBC,51,78,1,Regular Season
+2024,South Florida,St John's,69,75,1,Regular Season
+2024,Iowa,Vanderbilt,58,62,1,Regular Season
+2024,BYU,Howard,72,67,1,Regular Season
+2024,Villanova,Queens,67,62,1,Regular Season
+2024,Hawai'i,Troy,70,75,1,Regular Season
+2024,Hawai'i,Wright St,67,68,1,Regular Season
+2024,UCLA,Alabama,69,50,1,Regular Season
+2024,Illinois,Tennessee St,70,75,1,Regular Season
+2024,Iowa,Furman,60,72,1,Regular Season
+2024,UMBC,N Dakota St,66,67,1,Regular Season
+2024,SMU,TCU,83,63,1,Regular Season
+2024,Georgia,Queens,64,55,1,Regular Season
+2024,South Florida,Prairie View,47,55,1,Regular Season
+2024,VCU,BYU,65,83,1,Regular Season
+2024,Florida,Michigan,70,63,1,Regular Season
+2024,North Carolina,Miami OH,71,57,1,Regular Season
+2024,Gonzaga,Texas Tech,75,70,1,Regular Season
+2024,Hawai'i,Troy,62,78,1,Regular Season
+2024,Kansas,Ohio State,69,62,1,Regular Season
+2024,Arkansas,CA Baptist,91,79,1,Regular Season
+2024,Purdue,Duke,66,75,1,Regular Season
+2024,Northern Iowa,Saint Mary's,64,75,1,Regular Season
+2024,Siena,Texas Tech,67,72,1,Regular Season
+2024,Illinois,Michigan St,64,74,1,Regular Season
+2024,Wright St,Tennessee St,77,64,1,Regular Season
+2024,Kentucky,Kansas,72,61,1,Regular Season
+2024,Kennesaw St,Georgia,73,66,1,Regular Season
+2024,South Florida,Michigan,62,77,1,Regular Season
+2024,Vanderbilt,Illinois,56,72,1,Regular Season
+2024,Miami OH,UConn,63,76,1,Regular Season
+2024,Missouri,UCLA,65,83,1,Regular Season
+2024,Missouri,Alabama,62,65,1,Regular Season
+2024,UConn,North Carolina,59,75,1,Regular Season
+2024,Iowa State,Furman,71,66,1,Regular Season
+2024,Troy,Saint Louis,51,61,1,Regular Season
+2024,Ohio State,Texas A&M,67,66,1,Regular Season
+2024,Missouri,UCLA,65,64,1,Regular Season
+2024,Ohio State,Long Island,70,44,1,Regular Season
+2024,St John's,Utah State,75,58,1,Regular Season
+2024,High Point,Michigan,73,64,1,Regular Season
+2024,South Florida,Saint Mary's,73,59,1,Regular Season
+2024,Northern Iowa,Arizona,68,85,1,Regular Season
+2024,TCU,Nebraska,64,74,1,Regular Season
+2024,Alabama,Clemson,70,54,1,Regular Season
+2024,Vanderbilt,North Carolina,62,67,1,Regular Season
+2024,Miami OH,Saint Mary's,66,71,1,Regular Season
+2024,Miami,Lehigh,59,68,1,Regular Season
+2024,Missouri,Idaho,80,67,1,Regular Season
+2024,Hawai'i,CA Baptist,70,69,1,Regular Season
+2024,Penn,Troy,77,75,1,Regular Season
+2024,BYU,Santa Clara,73,66,1,Regular Season
+2024,Howard,Gonzaga,61,66,1,Regular Season
+2024,Northern Iowa,Purdue,63,55,1,Regular Season
+2024,Texas,Kennesaw St,74,58,1,Regular Season
+2024,Long Island,Howard,54,59,1,Regular Season
+2024,Santa Clara,Wright St,64,59,1,Regular Season
+2024,Villanova,NC State,70,64,1,Regular Season
+2024,Kansas,Missouri,74,64,1,Regular Season
+2024,Utah State,Northern Iowa,64,59,1,Regular Season
+2024,SMU,Hofstra,76,81,1,Regular Season
+2024,UConn,Furman,79,77,1,Regular Season
+2024,Illinois,Miami,70,66,1,Regular Season
+2024,TCU,Santa Clara,81,70,1,Regular Season
+2024,Gonzaga,TCU,71,61,1,Regular Season
+2024,Alabama,N Dakota St,77,63,1,Regular Season
+2024,Houston,UCLA,71,65,1,Regular Season
+2024,Siena,N Dakota St,84,72,1,Regular Season
+2024,South Florida,Siena,73,66,1,Regular Season
+2024,High Point,Miami OH,51,53,1,Regular Season
+2024,UMBC,Arkansas,69,65,1,Regular Season
+2024,Purdue,Miami,69,70,1,Regular Season
+2024,Florida,UConn,74,76,1,Regular Season
+2024,Ohio State,Tennessee St,69,58,1,Regular Season
+2024,Hofstra,Idaho,72,61,1,Regular Season
+2024,CA Baptist,BYU,61,69,1,Regular Season
+2024,Ohio State,Vanderbilt,66,71,1,Regular Season
+2024,Hofstra,Hawai'i,73,68,1,Regular Season
+2024,Michigan,Idaho,60,54,1,Regular Season
+2024,St John's,UCLA,70,76,1,Regular Season
+2024,Siena,Texas,66,67,1,Regular Season
+2024,Iowa,Texas,68,59,1,Regular Season
+2024,Hawai'i,VCU,58,76,1,Regular Season
+2024,Tennessee St,Nebraska,51,73,1,Regular Season
+2024,BYU,Siena,75,67,1,Regular Season
+2024,McNeese,Troy,70,69,1,Regular Season
+2024,Troy,Michigan,69,63,1,Regular Season
+2024,Santa Clara,Hawai'i,68,61,1,Regular Season
+2024,Siena,Saint Mary's,60,69,1,Regular Season
+2024,Duke,TCU,74,67,1,Regular Season
+2024,Nebraska,Lehigh,83,44,1,Regular Season
+2024,Houston,UCLA,65,71,1,Regular Season
+2024,Gonzaga,McNeese,79,61,1,Regular Season
+2024,Arizona,Clemson,59,48,1,Regular Season
+2024,Queens,Michigan St,50,80,1,Regular Season
+2024,Howard,Louisville,60,57,1,Regular Season
+2024,Florida,Louisville,60,83,1,Regular Season
+2024,McNeese,Miami OH,63,60,1,Regular Season
+2024,Queens,Illinois,53,71,1,Regular Season
+2024,Akron,Nebraska,59,69,1,Regular Season
+2024,Illinois,Howard,59,44,1,Regular Season
+2024,Missouri,Kennesaw St,58,64,1,Regular Season
+2024,Hofstra,Arkansas,64,66,1,Regular Season
+2024,Howard,Alabama,54,60,1,Regular Season
+2024,Saint Mary's,Michigan,68,75,1,Regular Season
+2024,Purdue,Arizona,76,55,1,Regular Season
+2024,Kennesaw St,N Dakota St,60,54,1,Regular Season
+2024,Clemson,Howard,66,80,1,Regular Season
+2024,Texas,Wright St,78,72,1,Regular Season
+2024,Hofstra,Florida,60,83,1,Regular Season
+2024,UMBC,UCF,77,64,1,Regular Season
+2024,Santa Clara,Virginia,69,68,1,Regular Season
+2024,High Point,UCF,70,82,1,Regular Season
+2024,Villanova,Miami,70,72,1,Regular Season
+2024,CA Baptist,Wisconsin,48,74,1,Regular Season
+2024,Ohio State,UCLA,71,60,1,Regular Season
+2024,Arkansas,Duke,69,66,1,Regular Season
+2024,Utah State,Tennessee,62,85,1,Regular Season
+2024,Texas A&M,High Point,63,81,1,Regular Season
+2024,VCU,Troy,60,57,1,Regular Season
+2024,Furman,Georgia,84,79,1,Regular Season
+2024,Purdue,Illinois,69,66,1,Regular Season
+2024,Florida,Howard,82,56,1,Regular Season
+2024,Nebraska,Purdue,65,58,1,Regular Season
+2024,South Florida,Wright St,81,67,1,Regular Season
+2024,Northern Iowa,UCLA,68,85,1,Regular Season
+2024,Villanova,Texas Tech,60,65,1,Regular Season
+2024,Hawai'i,Hofstra,69,64,1,Regular Season
+2024,McNeese,Texas Tech,64,68,1,Regular Season
+2025,UCF,Miami OH,72,70,1,Regular Season
+2025,Tennessee St,SMU,58,54,1,Regular Season
+2025,UCLA,Tennessee,62,85,1,Regular Season
+2025,Texas,Hawai'i,66,64,1,Regular Season
+2025,Prairie View,Texas A&M,57,66,1,Regular Season
+2025,Prairie View,Missouri,55,80,1,Regular Season
+2025,Siena,Iowa,54,71,1,Regular Season
+2025,UMBC,Florida,63,78,1,Regular Season
+2025,Gonzaga,Georgia,72,45,1,Regular Season
+2025,Gonzaga,Texas Tech,79,69,1,Regular Season
+2025,Hawai'i,Siena,66,73,1,Regular Season
+2025,Howard,Duke,64,74,1,Regular Season
+2025,Queens,Houston,79,65,1,Regular Season
+2025,Tennessee St,Saint Mary's,65,66,1,Regular Season
+2025,Texas A&M,Clemson,56,77,1,Regular Season
+2025,North Carolina,Penn,70,48,1,Regular Season
+2025,Saint Mary's,High Point,66,71,1,Regular Season
+2025,Villanova,McNeese,56,71,1,Regular Season
+2025,Iowa,Utah State,56,64,1,Regular Season
+2025,Miami,High Point,70,75,1,Regular Season
+2025,Saint Louis,Siena,56,61,1,Regular Season
+2025,Hofstra,Nebraska,64,81,1,Regular Season
+2025,Miami,Texas A&M,67,63,1,Regular Season
+2025,Arkansas,NC State,59,56,1,Regular Season
+2025,Arkansas,Kentucky,74,66,1,Regular Season
+2025,NC State,Penn,75,74,1,Regular Season
+2025,SMU,Saint Louis,68,82,1,Regular Season
+2025,Akron,Kentucky,67,66,1,Regular Season
+2025,Illinois,Tennessee,68,67,1,Regular Season
+2025,Florida,Illinois,68,55,1,Regular Season
+2025,Arkansas,Gonzaga,71,78,1,Regular Season
+2025,Wright St,McNeese,66,80,1,Regular Season
+2025,South Florida,Texas,76,55,1,Regular Season
+2025,UCLA,SMU,63,59,1,Regular Season
+2025,Iowa State,Siena,77,61,1,Regular Season
+2025,Penn,Purdue,63,65,1,Regular Season
+2025,Georgia,Clemson,59,83,1,Regular Season
+2025,Iowa,Iowa State,57,75,1,Regular Season
+2025,Clemson,Georgia,78,61,1,Regular Season
+2025,NC State,Troy,85,63,1,Regular Season
+2025,Texas A&M,VCU,62,74,1,Regular Season
+2025,Troy,Texas,59,58,1,Regular Season
+2025,NC State,McNeese,59,70,1,Regular Season
+2025,Virginia,Hofstra,62,75,1,Regular Season
+2025,Saint Louis,Texas Tech,56,60,1,Regular Season
+2025,Hofstra,North Carolina,72,73,1,Regular Season
+2025,VCU,Wright St,72,60,1,Regular Season
+2025,Penn,CA Baptist,74,71,1,Regular Season
+2025,Miami,TCU,68,58,1,Regular Season
+2025,Duke,Akron,80,70,1,Regular Season
+2025,Louisville,Ohio State,79,82,1,Regular Season
+2025,McNeese,Idaho,67,69,1,Regular Season
+2025,Missouri,Northern Iowa,69,70,1,Regular Season
+2025,Purdue,Houston,56,73,1,Regular Season
+2025,Akron,Vanderbilt,59,78,1,Regular Season
+2025,Texas Tech,Kennesaw St,78,66,1,Regular Season
+2025,Howard,South Florida,68,92,1,Regular Season
+2025,Miami OH,Villanova,65,62,1,Regular Season
+2025,Saint Mary's,Furman,70,68,1,Regular Season
+2025,TCU,CA Baptist,65,73,1,Regular Season
+2025,Texas Tech,Arizona,59,72,1,Regular Season
+2025,UCLA,Furman,51,68,1,Regular Season
+2025,Prairie View,Texas A&M,74,69,1,Regular Season
+2025,Tennessee,Texas,80,66,1,Regular Season
+2025,Northern Iowa,Hofstra,66,63,1,Regular Season
+2025,Tennessee,Arizona,63,57,1,Regular Season
+2025,Purdue,Kansas,63,62,1,Regular Season
+2025,UCLA,Santa Clara,73,74,1,Regular Season
+2025,Gonzaga,Texas Tech,76,73,1,Regular Season
+2025,High Point,Michigan St,61,79,1,Regular Season
+2025,Texas Tech,Tennessee,71,75,1,Regular Season
+2025,Wright St,Georgia,64,67,1,Regular Season
+2025,TCU,Penn,76,70,1,Regular Season
+2025,SMU,Miami,61,74,1,Regular Season
+2025,Queens,Kansas,52,54,1,Regular Season
+2025,Furman,Virginia,71,73,1,Regular Season
+2025,Hofstra,Wright St,61,51,1,Regular Season
+2025,Virginia,Lehigh,58,51,1,Regular Season
+2025,Saint Louis,Illinois,64,58,1,Regular Season
+2025,Michigan,High Point,81,67,1,Regular Season
+2025,Illinois,Missouri,58,64,1,Regular Season
+2025,Long Island,Kennesaw St,63,62,1,Regular Season
+2025,Iowa,Furman,66,65,1,Regular Season
+2025,Kennesaw St,Vanderbilt,45,66,1,Regular Season
+2025,UConn,UCF,68,61,1,Regular Season
+2025,Purdue,Prairie View,70,74,1,Regular Season
+2025,Iowa,Troy,75,57,1,Regular Season
+2025,Florida,UMBC,76,66,1,Regular Season
+2025,Troy,Ohio State,64,75,1,Regular Season
+2025,Nebraska,Duke,78,66,1,Regular Season
+2025,Saint Mary's,Villanova,58,69,1,Regular Season
+2025,Furman,Penn,68,69,1,Regular Season
+2025,UConn,UCF,82,72,1,Regular Season
+2025,BYU,Duke,56,74,1,Regular Season
+2025,Siena,North Carolina,69,70,1,Regular Season
+2025,Furman,Gonzaga,77,62,1,Regular Season
+2025,Villanova,St John's,51,69,1,Regular Season
+2025,UConn,CA Baptist,66,78,1,Regular Season
+2025,UCF,Lehigh,86,72,1,Regular Season
+2025,Purdue,UMBC,84,66,1,Regular Season
+2025,Villanova,Iowa,54,68,1,Regular Season
+2025,Duke,UCF,78,63,1,Regular Season
+2025,High Point,SMU,71,69,1,Regular Season
+2025,Georgia,Villanova,77,75,1,Regular Season
+2025,Kennesaw St,CA Baptist,79,64,1,Regular Season
+2025,Michigan St,Troy,80,62,1,Regular Season
+2025,Troy,Wright St,72,73,1,Regular Season
+2025,Wisconsin,Iowa State,73,76,1,Regular Season
+2025,Santa Clara,Siena,70,69,1,Regular Season
+2025,North Carolina,St John's,69,74,1,Regular Season
+2025,Tennessee St,SMU,59,58,1,Regular Season
+2025,Clemson,Queens,68,61,1,Regular Season
+2025,Florida,Queens,76,60,1,Regular Season
+2025,Hawai'i,St John's,60,65,1,Regular Season
+2025,North Carolina,Missouri,62,68,1,Regular Season
+2025,Iowa,Queens,84,72,1,Regular Season
+2025,Georgia,Illinois,64,85,1,Regular Season
+2025,Saint Louis,Penn,52,70,1,Regular Season
+2025,TCU,Howard,54,66,1,Regular Season
+2025,Georgia,Penn,62,79,1,Regular Season
+2025,South Florida,Queens,69,72,1,Regular Season
+2025,Howard,Wright St,76,63,1,Regular Season
+2025,Gonzaga,Texas A&M,73,62,1,Regular Season
+2025,Virginia,Santa Clara,70,79,1,Regular Season
+2025,Arizona,Santa Clara,61,63,1,Regular Season
+2025,Penn,Kentucky,60,65,1,Regular Season
+2025,McNeese,SMU,71,70,1,Regular Season
+2025,VCU,Lehigh,67,58,1,Regular Season
+2025,Miami,Idaho,75,74,1,Regular Season
+2025,Iowa,Furman,83,78,1,Regular Season
+2025,Northern Iowa,Hawai'i,84,66,1,Regular Season
+2025,Villanova,Wright St,67,78,1,Regular Season
+2025,BYU,SMU,62,68,1,Regular Season
+2025,Howard,South Florida,74,73,1,Regular Season
+2025,Iowa,Iowa State,67,59,1,Regular Season
+2025,Kentucky,Kansas,71,58,1,Regular Season
+2025,Troy,CA Baptist,67,66,1,Regular Season
+2025,Tennessee St,Santa Clara,68,77,1,Regular Season
+2025,Michigan,Troy,76,83,1,Regular Season
+2025,North Carolina,UCF,59,70,1,Regular Season
+2025,Miami OH,Michigan,71,72,1,Regular Season
+2025,Penn,UMBC,68,67,1,Regular Season
+2025,Lehigh,Siena,71,62,1,Regular Season
+2025,Troy,UConn,77,69,1,Regular Season
+2025,North Carolina,South Florida,69,55,1,Regular Season
+2025,Villanova,Wright St,67,65,1,Regular Season
+2025,Texas,Iowa State,63,77,1,Regular Season
+2025,Long Island,Idaho,69,75,1,Regular Season
+2025,Missouri,Clemson,74,83,1,Regular Season
+2025,Utah State,Siena,72,67,1,Regular Season
+2025,High Point,Wisconsin,62,67,1,Regular Season
+2025,Houston,North Carolina,63,58,1,Regular Season
+2025,Georgia,Iowa State,73,63,1,Regular Season
+2025,NC State,UCF,64,69,1,Regular Season
+2025,Virginia,Illinois,68,61,1,Regular Season
+2025,Texas Tech,Gonzaga,64,70,1,Regular Season
+2025,Miami,UCF,75,82,1,Regular Season
+2025,Saint Louis,Arkansas,69,77,1,Regular Season
+2025,Texas,Clemson,60,64,1,Regular Season
+2025,TCU,Villanova,73,72,1,Regular Season
+2025,Siena,Michigan,70,80,1,Regular Season
+2025,St John's,Georgia,82,65,1,Regular Season
+2025,Siena,Miami,54,69,1,Regular Season
+2025,Arkansas,Prairie View,67,72,1,Regular Season
+2025,Hawai'i,Queens,54,56,1,Regular Season
+2025,Illinois,Idaho,74,64,1,Regular Season
+2025,BYU,North Carolina,68,84,1,Regular Season
+2025,UMBC,Idaho,77,76,1,Regular Season
+2025,UMBC,UCF,70,77,1,Regular Season
+2025,Akron,Georgia,85,67,1,Regular Season
+2025,Arizona,Missouri,63,70,1,Regular Season
+2025,McNeese,Iowa,68,74,1,Regular Season
+2025,Wright St,Texas A&M,64,61,1,Regular Season
+2025,Hofstra,North Carolina,54,58,1,Regular Season
+2025,Michigan,Ohio State,75,55,1,Regular Season
+2025,Houston,Clemson,66,67,1,Regular Season
+2025,Michigan,Texas,59,44,1,Regular Season
+2025,UCLA,Florida,60,74,1,Regular Season
+2025,Hofstra,Vanderbilt,74,83,1,Regular Season
+2025,Arizona,Virginia,69,76,1,Regular Season
+2025,Michigan,Illinois,73,78,1,Regular Season
+2025,Northern Iowa,Texas A&M,62,65,1,Regular Season
+2025,Akron,Saint Mary's,72,69,1,Regular Season
+2025,Michigan,Texas,59,71,1,Regular Season
+2025,Kentucky,Georgia,77,69,1,Regular Season
+2025,Wright St,Santa Clara,45,60,1,Regular Season
+2025,Florida,Wright St,71,51,1,Regular Season
+2025,Villanova,Arizona,45,68,1,Regular Season
+2025,St John's,UMBC,77,61,1,Regular Season
+2025,CA Baptist,St John's,74,79,1,Regular Season
+2025,Siena,Missouri,75,81,1,Regular Season
+2025,Arizona,Saint Mary's,63,72,1,Regular Season
+2025,Florida,Saint Louis,62,71,1,Regular Season
+2025,Michigan,High Point,71,72,1,Regular Season
+2025,Queens,Idaho,73,70,1,Regular Season
+2025,CA Baptist,Saint Mary's,82,80,1,Regular Season
+2025,SMU,Kennesaw St,59,66,1,Regular Season
+2025,UConn,Utah State,62,64,1,Regular Season
+2025,Kentucky,Idaho,74,59,1,Regular Season
+2025,Florida,UCLA,69,61,1,Regular Season
+2025,BYU,Northern Iowa,67,68,1,Regular Season
+2025,Long Island,CA Baptist,74,82,1,Regular Season
+2025,Long Island,CA Baptist,64,73,1,Regular Season
+2025,Prairie View,Penn,64,53,1,Regular Season
+2025,Virginia,TCU,69,54,1,Regular Season
+2025,UMBC,Missouri,61,64,1,Regular Season
+2025,BYU,Lehigh,76,74,1,Regular Season
+2025,North Carolina,Saint Mary's,74,65,1,Regular Season
+2025,Clemson,Queens,65,64,1,Regular Season
+2025,NC State,Houston,70,57,1,Regular Season
+2025,Siena,Texas Tech,62,82,1,Regular Season
+2025,Tennessee,Troy,63,62,1,Regular Season
+2025,St John's,SMU,60,70,1,Regular Season
+2025,Kentucky,Vanderbilt,66,73,1,Regular Season
+2025,Vanderbilt,Siena,82,60,1,Regular Season
+2025,Wisconsin,NC State,72,62,1,Regular Season
+2025,Georgia,Texas A&M,77,74,1,Regular Season
+2025,Georgia,Texas Tech,62,68,1,Regular Season
+2025,Kentucky,Northern Iowa,54,65,1,Regular Season
+2025,Purdue,High Point,77,66,1,Regular Season
+2025,Georgia,Purdue,66,68,1,Regular Season
+2025,Northern Iowa,Penn,74,56,1,Regular Season
+2025,UCF,Texas A&M,73,62,1,Regular Season
+2025,Kansas,Troy,66,77,1,Regular Season
+2025,Saint Louis,UCF,73,67,1,Regular Season
+2025,CA Baptist,Saint Mary's,65,70,1,Regular Season
+2025,Texas Tech,Nebraska,83,67,1,Regular Season
+2025,Duke,Furman,73,65,1,Regular Season
+2025,Tennessee,Santa Clara,77,66,1,Regular Season
+2025,Virginia,Iowa State,70,62,1,Regular Season
+2025,Arkansas,Illinois,46,52,1,Regular Season
+2025,Troy,BYU,69,61,1,Regular Season
+2025,Howard,Florida,72,64,1,Regular Season
+2025,Michigan,Santa Clara,59,76,1,Regular Season
+2025,Santa Clara,St John's,67,74,1,Regular Season
+2025,BYU,Iowa,69,78,1,Regular Season
+2025,UCF,Siena,67,69,1,Regular Season
+2025,Siena,Troy,63,81,1,Regular Season
+2025,Furman,Idaho,76,66,1,Regular Season
+2025,Wright St,Santa Clara,65,76,1,Regular Season
+2025,TCU,Prairie View,72,60,1,Regular Season
+2025,Nebraska,Michigan St,64,59,1,Regular Season
+2025,Hofstra,Arkansas,63,74,1,Regular Season
+2025,Kentucky,Vanderbilt,69,64,1,Regular Season
+2025,Wisconsin,St John's,69,62,1,Regular Season
+2025,Houston,N Dakota St,71,69,1,Regular Season
+2025,N Dakota St,UCF,66,85,1,Regular Season
+2025,McNeese,North Carolina,67,78,1,Regular Season
+2025,VCU,Long Island,68,76,1,Regular Season
+2025,Houston,Idaho,75,65,1,Regular Season
+2025,Furman,UCF,67,72,1,Regular Season
+2025,Kennesaw St,Troy,62,71,1,Regular Season
+2025,Gonzaga,Prairie View,78,67,1,Regular Season
+2025,Saint Louis,Florida,58,66,1,Regular Season
+2025,Northern Iowa,Ohio State,74,62,1,Regular Season
+2025,Iowa State,Kennesaw St,61,84,1,Regular Season
+2025,Santa Clara,Virginia,74,77,1,Regular Season
+2025,Miami,Houston,45,54,1,Regular Season
+2025,Long Island,Idaho,71,68,1,Regular Season
+2025,Michigan,Vanderbilt,51,73,1,Regular Season
+2025,Arkansas,Santa Clara,78,54,1,Regular Season
+2025,Siena,UConn,62,66,1,Regular Season
+2025,Howard,Gonzaga,56,78,1,Regular Season
+2025,Florida,Penn,70,61,1,Regular Season
+2025,TCU,Utah State,64,75,1,Regular Season
+2025,Wright St,Tennessee St,57,64,1,Regular Season
+2025,Tennessee St,Furman,57,56,1,Regular Season
+2025,Howard,Prairie View,62,83,1,Regular Season
+2025,Furman,UCF,73,62,1,Regular Season
+2025,UConn,Wisconsin,53,75,1,Regular Season
+2025,Saint Louis,Howard,57,60,1,Regular Season
+2025,Kentucky,Howard,68,76,1,Regular Season
+2025,Texas Tech,Villanova,76,55,1,Regular Season
+2025,Duke,Houston,62,51,1,Regular Season
+2025,Wisconsin,Iowa,70,56,1,Regular Season
+2025,Ohio State,Kansas,69,64,1,Regular Season
+2025,Iowa State,Purdue,68,57,1,Regular Season
+2025,Miami,Saint Louis,71,62,1,Regular Season
+2025,Wisconsin,North Carolina,69,65,1,Regular Season
+2025,Georgia,Missouri,59,77,1,Regular Season
+2025,Long Island,Nebraska,63,76,1,Regular Season
+2025,Howard,Ohio State,76,70,1,Regular Season
+2025,Gonzaga,Villanova,69,55,1,Regular Season
+2025,Kansas,Iowa,60,62,1,Regular Season
+2025,Kansas,SMU,72,71,1,Regular Season
+2025,CA Baptist,Arkansas,57,80,1,Regular Season
+2025,Georgia,CA Baptist,59,68,1,Regular Season
+2025,N Dakota St,Louisville,69,59,1,Regular Season
+2025,Texas,Arkansas,62,75,1,Regular Season
+2025,Vanderbilt,Northern Iowa,73,61,1,Regular Season
+2025,Ohio State,Utah State,71,72,1,Regular Season
+2025,Michigan St,Tennessee,55,75,1,Regular Season
+2025,Ohio State,UCLA,68,73,1,Regular Season
+2025,Furman,Duke,70,97,1,Regular Season
+2025,Iowa State,Troy,73,65,1,Regular Season
+2025,Texas,Utah State,83,81,1,Regular Season
+2025,UConn,Louisville,80,67,1,Regular Season
+2025,SMU,Illinois,62,72,1,Regular Season
+2025,Prairie View,Saint Louis,61,65,1,Regular Season
+2025,Tennessee,Howard,61,60,1,Regular Season
+2025,Siena,Virginia,50,66,1,Regular Season
+2025,High Point,Prairie View,67,68,1,Regular Season
+2025,Michigan,UConn,64,66,1,Regular Season
+2025,Houston,NC State,93,60,1,Regular Season
+2025,UCF,Michigan St,59,80,1,Regular Season
+2025,Illinois,Hawai'i,66,58,1,Regular Season
+2025,Clemson,Northern Iowa,65,76,1,Regular Season
+2025,St John's,Texas,73,75,1,Regular Season
+2025,Michigan St,Iowa State,85,68,1,Regular Season
+2025,Purdue,Prairie View,67,74,1,Regular Season
+2025,Lehigh,Iowa State,66,64,1,Regular Season
+2025,Vanderbilt,Virginia,73,83,1,Regular Season
+2025,UConn,Vanderbilt,73,72,1,Regular Season
+2025,Penn,Vanderbilt,52,69,1,Regular Season
+2025,Arizona,Gonzaga,68,66,1,Regular Season
+2025,TCU,Villanova,63,73,1,Regular Season
+2025,UCLA,Michigan,50,73,1,Regular Season
+2025,McNeese,Saint Mary's,73,70,1,Regular Season
+2025,Clemson,North Carolina,59,65,1,Regular Season
+2025,Vanderbilt,UMBC,66,65,1,Regular Season
+2025,North Carolina,Alabama,79,69,1,Regular Season
+2025,High Point,Texas Tech,56,66,1,Regular Season
+2025,Idaho,N Dakota St,66,60,1,Regular Season
+2025,Santa Clara,Tennessee,73,79,1,Regular Season
+2025,Santa Clara,CA Baptist,76,62,1,Regular Season
+2025,Tennessee,Clemson,64,74,1,Regular Season
+2025,Lehigh,Santa Clara,67,65,1,Regular Season
+2025,North Carolina,Furman,83,68,1,Regular Season
+2025,St John's,Villanova,81,59,1,Regular Season
+2025,UCF,Nebraska,73,80,1,Regular Season
+2025,Houston,Howard,68,62,1,Regular Season
+2025,Hawai'i,TCU,65,73,1,Regular Season
+2025,Siena,SMU,58,76,1,Regular Season
+2025,Santa Clara,Illinois,59,51,1,Regular Season
+2025,Long Island,Virginia,78,72,1,Regular Season
+2025,Tennessee,Villanova,74,69,1,Regular Season
+2025,CA Baptist,BYU,79,72,1,Regular Season
+2025,Idaho,Queens,63,56,1,Regular Season
+2025,UMBC,Wisconsin,61,72,1,Regular Season
+2025,UCLA,Iowa,59,68,1,Regular Season
+2025,Virginia,Idaho,88,61,1,Regular Season
+2025,Purdue,Prairie View,57,63,1,Regular Season
+2025,Iowa State,TCU,70,71,1,Regular Season
+2025,Ohio State,SMU,75,76,1,Regular Season
+2025,Villanova,Virginia,72,76,1,Regular Season
+2025,VCU,Ohio State,65,54,1,Regular Season
+2025,UMBC,Arizona,66,83,1,Regular Season
+2025,Siena,Queens,67,75,1,Regular Season
+2025,Hofstra,Texas,62,61,1,Regular Season
+2025,Penn,Arkansas,66,74,1,Regular Season
+2025,UMBC,N Dakota St,63,70,1,Regular Season
+2025,Miami OH,Clemson,67,83,1,Regular Season
+2025,Utah State,Kansas,82,71,1,Regular Season
+2025,Wright St,South Florida,72,63,1,Regular Season
+2025,Illinois,Michigan St,51,60,1,Regular Season
+2025,BYU,Hofstra,48,72,1,Regular Season
+2025,Lehigh,Arizona,69,68,1,Regular Season
+2025,Troy,Prairie View,56,55,1,Regular Season
+2025,Texas,Iowa,64,83,1,Regular Season
+2025,Tennessee St,Louisville,69,65,1,Regular Season
+2025,Tennessee St,Villanova,82,74,1,Regular Season
+2025,UMBC,Duke,62,75,1,Regular Season
+2025,Idaho,Wisconsin,77,88,1,Regular Season
+2025,Louisville,Purdue,59,85,1,Regular Season
+2025,Utah State,Wright St,78,65,1,Regular Season
+2025,South Florida,Prairie View,64,71,1,Regular Season
+2025,Kennesaw St,UCLA,94,80,1,Regular Season
+2025,SMU,Saint Mary's,63,62,1,Regular Season
+2025,N Dakota St,Utah State,57,74,1,Regular Season
+2025,Lehigh,Michigan St,52,80,1,Regular Season
+2025,Nebraska,Ohio State,72,48,1,Regular Season
+2025,Miami,Ohio State,81,61,1,Regular Season
+2025,North Carolina,Louisville,68,67,1,Regular Season
+2025,VCU,Prairie View,81,64,1,Regular Season
+2025,Utah State,Saint Louis,70,63,1,Regular Season
+2025,Nebraska,North Carolina,68,62,1,Regular Season
+2025,Houston,South Florida,71,90,1,Regular Season
+2025,TCU,Saint Louis,70,71,1,Regular Season
+2025,Illinois,Northern Iowa,67,60,1,Regular Season
+2025,CA Baptist,North Carolina,54,63,1,Regular Season
+2025,Georgia,Saint Louis,69,52,1,Regular Season
+2025,Troy,Missouri,56,75,1,Regular Season
+2025,Utah State,McNeese,77,59,1,Regular Season
+2025,Long Island,NC State,69,83,1,Regular Season
+2025,NC State,Idaho,76,67,1,Regular Season
+2025,High Point,Michigan,85,80,1,Regular Season
+2025,Michigan St,Clemson,77,51,1,Regular Season
+2025,Wright St,Miami,73,67,1,Regular Season
+2025,Miami OH,Clemson,57,59,1,Regular Season
+2025,Hawai'i,Tennessee St,59,67,1,Regular Season
+2025,Queens,UMBC,82,67,1,Regular Season
+2025,Hawai'i,Idaho,55,81,1,Regular Season
+2025,Akron,Iowa State,71,63,1,Regular Season
+2025,Tennessee St,UMBC,76,64,1,Regular Season
+2025,Utah State,Long Island,72,60,1,Regular Season
+2025,North Carolina,Purdue,57,66,1,Regular Season
+2025,North Carolina,Duke,72,64,1,Regular Season
+2025,Gonzaga,Miami OH,67,64,1,Regular Season
+2025,BYU,Kennesaw St,68,80,1,Regular Season
+2025,Texas,Kennesaw St,56,64,1,Regular Season
+2025,BYU,TCU,68,66,1,Regular Season
+2025,Vanderbilt,Kentucky,81,74,1,Regular Season
+2025,Northern Iowa,BYU,74,66,1,Regular Season
+2025,Alabama,Ohio State,64,69,1,Regular Season
+2025,High Point,Queens,61,57,1,Regular Season
+2025,North Carolina,UCLA,75,62,1,Regular Season
+2025,Wright St,Vanderbilt,68,80,1,Regular Season
+2025,Idaho,Villanova,80,74,1,Regular Season
+2025,UConn,NC State,65,72,1,Regular Season
+2025,Lehigh,Hofstra,60,63,1,Regular Season
+2025,Queens,Iowa State,87,77,1,Regular Season
+2025,UCLA,Missouri,65,77,1,Regular Season
+2025,Kentucky,Alabama,63,65,1,Regular Season
+2025,SMU,Northern Iowa,53,74,1,Regular Season
+2025,Lehigh,Kennesaw St,69,87,1,Regular Season
+2025,Tennessee,Texas A&M,70,62,1,Regular Season
+2025,Virginia,Purdue,68,54,1,Regular Season
+2025,Gonzaga,Tennessee,62,75,1,Regular Season
+2025,Hawai'i,Kentucky,74,69,1,Regular Season
+2025,Idaho,Utah State,65,72,1,Regular Season
+2025,Purdue,Michigan St,69,70,1,Regular Season
+2025,Akron,N Dakota St,64,72,1,Regular Season
+2025,St John's,Michigan,64,73,1,Regular Season
+2025,UCF,NC State,80,86,1,Regular Season
+2025,Queens,Ohio State,62,57,1,Regular Season
+2025,Alabama,N Dakota St,74,68,1,Regular Season
+2025,Santa Clara,Michigan,75,54,1,Regular Season
+2025,Duke,Houston,67,79,1,Regular Season
+2025,UConn,Penn,62,69,1,Regular Season
+2025,Iowa State,Tennessee,64,72,1,Regular Season
+2025,Villanova,Penn,67,60,1,Regular Season
+2025,Houston,Northern Iowa,67,68,1,Regular Season
+2025,Siena,Miami,64,73,1,Regular Season
+2025,Miami,Idaho,78,68,1,Regular Season
+2025,Utah State,Iowa,74,67,1,Regular Season
+2025,UCLA,Siena,61,75,1,Regular Season
+2025,Texas,UMBC,76,69,1,Regular Season
+2025,McNeese,Michigan St,57,71,1,Regular Season
+2025,Georgia,Wright St,69,73,1,Regular Season
+2025,UCF,Wright St,73,58,1,Regular Season
+2025,Santa Clara,Furman,74,64,1,Regular Season
+2025,Hofstra,Duke,64,69,1,Regular Season
+2025,Villanova,Long Island,73,67,1,Regular Season
+2025,Iowa,Kansas,80,46,1,Regular Season
+2025,Purdue,Wisconsin,63,66,1,Regular Season
+2025,Troy,Hofstra,62,74,1,Regular Season
+2025,Louisville,VCU,84,87,1,Regular Season
+2025,Gonzaga,Virginia,57,65,1,Regular Season
+2025,UCF,Duke,54,57,1,Regular Season
+2025,UCLA,Howard,65,71,1,Regular Season
+2025,Virginia,Texas,83,64,1,Regular Season
+2025,UCLA,Duke,59,75,1,Regular Season
+2025,UConn,Penn,61,62,1,Regular Season
+2025,Arizona,TCU,68,53,1,Regular Season
+2025,Missouri,Akron,64,60,1,Regular Season
+2025,McNeese,Furman,80,77,1,Regular Season
+2025,CA Baptist,Texas A&M,51,62,1,Regular Season
+2025,Saint Louis,Florida,64,73,1,Regular Season
+2025,Duke,Florida,65,66,1,Regular Season
+2025,UMBC,BYU,71,70,1,Regular Season
+2025,North Carolina,Tennessee St,65,48,1,Regular Season
+2025,Kentucky,Idaho,68,71,1,Regular Season
+2025,Texas,Siena,76,81,1,Regular Season
+2025,South Florida,UCF,65,70,1,Regular Season
+2025,South Florida,Georgia,70,59,1,Regular Season
+2025,Idaho,Saint Louis,55,76,1,Regular Season
+2025,Houston,Kennesaw St,72,60,1,Regular Season
+2025,TCU,Wright St,71,76,1,Regular Season
+2025,Howard,Miami,62,68,1,Regular Season
+2025,Akron,Arizona,67,78,1,Regular Season
+2025,Ohio State,UConn,81,65,1,Regular Season
+2025,Texas A&M,South Florida,69,61,1,Regular Season
+2025,Miami OH,Michigan St,58,79,1,Regular Season
+2025,UCLA,Saint Louis,59,64,1,Regular Season
+2025,Iowa,Nebraska,66,75,1,Regular Season
+2025,Lehigh,Hofstra,72,71,1,Regular Season
+2025,BYU,Texas,64,66,1,Regular Season
+2025,Arizona,Michigan,63,59,1,Regular Season
+2025,Louisville,Florida,72,64,1,Regular Season
+2025,Hawai'i,BYU,62,63,1,Regular Season
+2025,UCF,Clemson,74,49,1,Regular Season
+2025,Michigan St,CA Baptist,73,68,1,Regular Season
+2025,Tennessee,Troy,81,66,1,Regular Season
+2025,Miami OH,McNeese,78,64,1,Regular Season
+2025,Duke,Idaho,64,68,1,Regular Season
+2025,Villanova,Northern Iowa,80,81,1,Regular Season
+2025,Miami OH,Prairie View,66,84,1,Regular Season
+2025,Purdue,Michigan,75,71,1,Regular Season
+2025,Ohio State,Illinois,56,70,1,Regular Season
+2025,Wisconsin,Miami,80,64,1,Regular Season
+2025,Tennessee St,Ohio State,75,61,1,Regular Season
+2025,Nebraska,Duke,60,59,1,Regular Season
+2025,Kennesaw St,Texas A&M,76,65,1,Regular Season
+2025,Vanderbilt,Clemson,61,68,1,Regular Season
+2025,Saint Louis,South Florida,57,61,1,Regular Season
+2025,Wright St,Prairie View,53,69,1,Regular Season
+2025,Texas,Tennessee St,60,67,1,Regular Season
+2025,Iowa,Ohio State,77,84,1,Regular Season
+2025,South Florida,Kentucky,70,56,1,Regular Season
+2025,UMBC,Michigan,69,72,1,Regular Season
+2026,Miami,Ohio State,66,60,1,Regular Season
+2026,Illinois,UConn,75,55,1,Regular Season
+2026,Duke,Tennessee St,70,75,1,Regular Season
+2026,Texas,Wright St,92,75,1,Regular Season
+2026,Idaho,St John's,63,81,1,Regular Season
+2026,Michigan St,Missouri,71,74,1,Regular Season
+2026,Louisville,Queens,56,65,1,Regular Season
+2026,Georgia,UCF,65,72,1,Regular Season
+2026,Siena,Gonzaga,68,76,1,Regular Season
+2026,Lehigh,Clemson,73,70,1,Regular Season
+2026,NC State,South Florida,82,59,1,Regular Season
+2026,CA Baptist,Furman,74,79,1,Regular Season
+2026,Lehigh,McNeese,68,79,1,Regular Season
+2026,Utah State,Louisville,77,64,1,Regular Season
+2026,Queens,Ohio State,52,73,1,Regular Season
+2026,Alabama,McNeese,75,59,1,Regular Season
+2026,Lehigh,Houston,68,77,1,Regular Season
+2026,Utah State,Michigan St,69,71,1,Regular Season
+2026,Louisville,TCU,67,66,1,Regular Season
+2026,Michigan,Purdue,75,68,1,Regular Season
+2026,North Carolina,South Florida,76,73,1,Regular Season
+2026,UConn,Saint Mary's,61,65,1,Regular Season
+2026,Penn,N Dakota St,60,64,1,Regular Season
+2026,Santa Clara,Virginia,72,79,1,Regular Season
+2026,Vanderbilt,UConn,69,70,1,Regular Season
+2026,Hawai'i,UMBC,67,66,1,Regular Season
+2026,Prairie View,Louisville,57,77,1,Regular Season
+2026,Siena,Prairie View,72,71,1,Regular Season
+2026,Tennessee St,CA Baptist,58,64,1,Regular Season
+2026,Miami,Illinois,68,71,1,Regular Season
+2026,Arizona,N Dakota St,74,62,1,Regular Season
+2026,Texas,Northern Iowa,65,73,1,Regular Season
+2026,Iowa,Long Island,60,55,1,Regular Season
+2026,Queens,Miami OH,60,73,1,Regular Season
+2026,South Florida,Michigan St,71,79,1,Regular Season
+2026,Vanderbilt,SMU,66,65,1,Regular Season
+2026,Missouri,VCU,64,63,1,Regular Season
+2026,VCU,UCLA,68,77,1,Regular Season
+2026,Kansas,Saint Mary's,66,76,1,Regular Season
+2026,Kansas,Idaho,61,68,1,Regular Season
+2026,VCU,Kentucky,71,85,1,Regular Season
+2026,Duke,Wright St,61,49,1,Regular Season
+2026,BYU,Furman,59,77,1,Regular Season
+2026,Clemson,Akron,80,61,1,Regular Season
+2026,Tennessee St,Idaho,76,74,1,Regular Season
+2026,Miami OH,Florida,64,82,1,Regular Season
+2026,Iowa,Alabama,52,73,1,Regular Season
+2026,McNeese,Villanova,57,76,1,Regular Season
+2026,UCLA,Siena,72,65,1,Regular Season
+2026,Duke,Utah State,66,59,1,Regular Season
+2026,VCU,Arizona,54,65,1,Regular Season
+2026,Akron,Tennessee St,70,62,1,Regular Season
+2026,Alabama,Arizona,72,83,1,Regular Season
+2026,Wright St,Nebraska,50,72,1,Regular Season
+2026,North Carolina,Arizona,58,77,1,Regular Season
+2026,Villanova,Texas Tech,73,72,1,Regular Season
+2026,Kennesaw St,High Point,67,44,1,Regular Season
+2026,Hawai'i,Wright St,72,57,1,Regular Season
+2026,Iowa,Michigan,57,71,1,Regular Season
+2026,Lehigh,Wright St,77,80,1,Regular Season
+2026,Missouri,Saint Mary's,73,63,1,Regular Season
+2026,NC State,TCU,68,50,1,Regular Season
+2026,Georgia,Siena,50,59,1,Regular Season
+2026,Tennessee,UCLA,65,73,1,Regular Season
+2026,Michigan St,Miami,74,63,1,Regular Season
+2026,Ohio State,Georgia,66,80,1,Regular Season
+2026,BYU,Gonzaga,74,71,1,Regular Season
+2026,Tennessee,South Florida,65,75,1,Regular Season
+2026,South Florida,UMBC,61,70,1,Regular Season
+2026,Duke,Alabama,72,65,1,Regular Season
+2026,Kansas,Georgia,65,71,1,Regular Season
+2026,Vanderbilt,Texas Tech,69,81,1,Regular Season
+2026,Queens,Hawai'i,71,78,1,Regular Season
+2026,Wright St,CA Baptist,55,75,1,Regular Season
+2026,Miami OH,McNeese,71,76,1,Regular Season
+2026,UMBC,NC State,63,81,1,Regular Season
+2026,CA Baptist,Furman,58,54,1,Regular Season
+2026,Nebraska,BYU,59,63,1,Regular Season
+2026,Kennesaw St,Prairie View,62,61,1,Regular Season
+2026,Arizona,Louisville,77,58,1,Regular Season
+2026,Illinois,TCU,77,67,1,Regular Season
+2026,Furman,Ohio State,71,65,1,Regular Season
+2026,Iowa State,Michigan,51,63,1,Regular Season
+2026,St John's,Queens,65,64,1,Regular Season
+2026,St John's,Idaho,70,62,1,Regular Season
+2026,Georgia,Villanova,68,61,1,Regular Season
+2026,Saint Louis,Clemson,70,80,1,Regular Season
+2026,Hawai'i,Texas Tech,66,69,1,Regular Season
+2026,Miami OH,Furman,65,64,1,Regular Season
+2026,SMU,TCU,62,68,1,Regular Season
+2026,Purdue,Arkansas,73,60,1,Regular Season
+2026,NC State,UCF,73,85,1,Regular Season
+2026,VCU,Miami OH,61,60,1,Regular Season
+2026,Saint Mary's,South Florida,71,67,1,Regular Season
+2026,Texas Tech,Kentucky,68,55,1,Regular Season
+2026,South Florida,Georgia,78,74,1,Regular Season
+2026,Northern Iowa,Michigan St,59,74,1,Regular Season
+2026,Furman,Georgia,59,74,1,Regular Season
+2026,NC State,Iowa,74,70,1,Regular Season
+2026,South Florida,Iowa,68,59,1,Regular Season
+2026,St John's,Prairie View,61,75,1,Regular Season
+2026,Santa Clara,High Point,72,67,1,Regular Season
+2026,Gonzaga,Akron,71,66,1,Regular Season
+2026,Penn,Troy,77,63,1,Regular Season
+2026,Santa Clara,NC State,61,69,1,Regular Season
+2026,High Point,Howard,78,77,1,Regular Season
+2026,Gonzaga,Kentucky,61,75,1,Regular Season
+2026,Texas Tech,UCF,74,75,1,Regular Season
+2026,Virginia,Tennessee St,84,58,1,Regular Season
+2026,High Point,Arkansas,66,71,1,Regular Season
+2026,Gonzaga,Saint Mary's,58,87,1,Regular Season
+2026,Gonzaga,Purdue,67,74,1,Regular Season
+2026,St John's,Alabama,62,70,1,Regular Season
+2026,Northern Iowa,Tennessee St,73,76,1,Regular Season
+2026,St John's,Georgia,79,82,1,Regular Season
+2026,Michigan St,Wisconsin,61,60,1,Regular Season
+2026,Kansas,South Florida,68,60,1,Regular Season
+2026,Kansas,Idaho,71,84,1,Regular Season
+2026,NC State,Ohio State,76,67,1,Regular Season
+2026,NC State,Vanderbilt,58,62,1,Regular Season
+2026,Illinois,Florida,68,78,1,Regular Season
+2026,Kansas,Texas Tech,47,59,1,Regular Season
+2026,Nebraska,Texas,69,65,1,Regular Season
+2026,Ohio State,Utah State,75,70,1,Regular Season
+2026,Furman,Santa Clara,72,67,1,Regular Season
+2026,Missouri,Michigan St,64,54,1,Regular Season
+2026,Vanderbilt,Long Island,79,64,1,Regular Season
+2026,UCLA,High Point,57,61,1,Regular Season
+2026,Idaho,Ohio State,57,71,1,Regular Season
+2026,Akron,TCU,65,64,1,Regular Season
+2026,Queens,South Florida,60,69,1,Regular Season
+2026,Queens,Troy,69,67,1,Regular Season
+2026,Queens,Texas Tech,61,74,1,Regular Season
+2026,Idaho,Ohio State,67,60,1,Regular Season
+2026,Purdue,Long Island,80,58,1,Regular Season
+2026,Utah State,Prairie View,84,83,1,Regular Season
+2026,Kennesaw St,TCU,59,73,1,Regular Season
+2026,Prairie View,Northern Iowa,67,81,1,Regular Season
+2026,VCU,Michigan St,83,73,1,Regular Season
+2026,Purdue,South Florida,79,55,1,Regular Season
+2026,Nebraska,TCU,57,59,1,Regular Season
+2026,Santa Clara,Hofstra,81,60,1,Regular Season
+2026,Long Island,Kentucky,68,84,1,Regular Season
+2026,Arkansas,UConn,66,75,1,Regular Season
+2026,Louisville,Troy,69,75,1,Regular Season
+2026,Northern Iowa,Florida,50,69,1,Regular Season
+2026,Tennessee St,Vanderbilt,68,80,1,Regular Season
+2026,Idaho,Ohio State,69,76,1,Regular Season
+2026,Michigan,Missouri,63,72,1,Regular Season
+2026,Iowa,Texas A&M,67,78,1,Regular Season
+2026,South Florida,Furman,72,73,1,Regular Season
+2026,UCF,Utah State,80,65,1,Regular Season
+2026,Tennessee,Villanova,65,59,1,Regular Season
+2026,Texas,BYU,63,67,1,Regular Season
+2026,Santa Clara,Georgia,62,69,1,Regular Season
+2026,High Point,Michigan St,46,66,1,Regular Season
+2026,Saint Mary's,Kansas,66,73,1,Regular Season
+2026,CA Baptist,Tennessee,61,75,1,Regular Season
+2026,Queens,Texas Tech,78,70,1,Regular Season
+2026,High Point,Alabama,75,65,1,Regular Season
+2026,Hawai'i,N Dakota St,70,58,1,Regular Season
+2026,Miami,Virginia,45,58,1,Regular Season
+2026,Wisconsin,Miami,90,64,1,Regular Season
+2026,UCF,Siena,66,67,1,Regular Season
+2026,TCU,UConn,65,76,1,Regular Season
+2026,Villanova,Iowa,65,50,1,Regular Season
+2026,Saint Louis,Arkansas,63,69,1,Regular Season
+2026,Utah State,High Point,72,70,1,Regular Season
+2026,Northern Iowa,Texas,68,67,1,Regular Season
+2026,Georgia,Hofstra,75,73,1,Regular Season
+2026,Illinois,Saint Louis,80,58,1,Regular Season
+2026,Penn,SMU,61,71,1,Regular Season
+2026,UCLA,Louisville,75,61,1,Regular Season
+2026,Wisconsin,Utah State,88,69,1,Regular Season
+2026,Saint Louis,UMBC,74,63,1,Regular Season
+2026,Hawai'i,Troy,48,58,1,Regular Season
+2026,UCF,Prairie View,68,64,1,Regular Season
+2026,Florida,Ohio State,76,58,1,Regular Season
+2026,CA Baptist,Hofstra,59,56,1,Regular Season
+2026,Arizona,SMU,70,71,1,Regular Season
+2026,High Point,Kansas,72,63,1,Regular Season
+2026,Michigan St,Wisconsin,73,74,1,Regular Season
+2026,Kennesaw St,Iowa State,63,78,1,Regular Season
+2026,Queens,Texas A&M,66,81,1,Regular Season
+2026,UConn,Miami OH,71,70,1,Regular Season
+2026,Tennessee,Kentucky,65,79,1,Regular Season
+2026,Kentucky,Texas Tech,74,49,1,Regular Season
+2026,TCU,Arkansas,66,73,1,Regular Season
+2026,Long Island,UCF,67,62,1,Regular Season
+2026,Texas A&M,St John's,62,90,1,Regular Season
+2026,Akron,McNeese,56,59,1,Regular Season
+2026,Louisville,Nebraska,74,80,1,Regular Season
+2026,Florida,High Point,91,57,1,Regular Season
+2026,Kentucky,Santa Clara,73,64,1,Regular Season
+2026,Purdue,Long Island,78,71,1,Regular Season
+2026,UCLA,Hofstra,62,64,1,Regular Season
+2026,N Dakota St,VCU,72,63,1,Regular Season
+2026,Wright St,Prairie View,68,60,1,Regular Season
+2026,St John's,TCU,64,61,1,Regular Season
+2026,Hofstra,Saint Louis,62,56,1,Regular Season
+2026,Saint Mary's,UCLA,56,62,1,Regular Season
+2026,Kennesaw St,Ohio State,73,72,1,Regular Season
+2026,Georgia,Idaho,71,81,1,Regular Season
+2026,Prairie View,Houston,75,61,1,Regular Season
+2026,Michigan,Penn,83,86,1,Regular Season
+2026,Hofstra,Kentucky,55,81,1,Regular Season
+2026,Siena,Illinois,71,82,1,Regular Season
+2026,Virginia,St John's,67,63,1,Regular Season
+2026,Texas,Idaho,61,71,1,Regular Season
+2026,St John's,Texas A&M,63,74,1,Regular Season
+2026,Kentucky,VCU,61,57,1,Regular Season
+2026,Kennesaw St,Kansas,67,63,1,Regular Season
+2026,VCU,North Carolina,60,74,1,Regular Season
+2026,Idaho,Kentucky,50,65,1,Regular Season
+2026,Prairie View,UCF,60,63,1,Regular Season
+2026,Clemson,Saint Mary's,79,63,1,Regular Season
+2026,Alabama,VCU,63,64,1,Regular Season
+2026,Idaho,Lehigh,71,73,1,Regular Season
+2026,St John's,Villanova,68,67,1,Regular Season
+2026,Vanderbilt,Tennessee St,71,58,1,Regular Season
+2026,VCU,Texas,57,54,1,Regular Season
+2026,Troy,VCU,77,63,1,Regular Season
+2026,Kansas,Georgia,77,82,1,Regular Season
+2026,Arkansas,Miami,65,58,1,Regular Season
+2026,Northern Iowa,BYU,74,67,1,Regular Season
+2026,Nebraska,Miami,69,61,1,Regular Season
+2026,North Carolina,Kansas,67,66,1,Regular Season
+2026,UCLA,Vanderbilt,57,56,1,Regular Season
+2026,Virginia,Hofstra,79,78,1,Regular Season
+2026,Hofstra,NC State,58,71,1,Regular Season
+2026,Santa Clara,CA Baptist,56,66,1,Regular Season
+2026,Troy,McNeese,57,76,1,Regular Season
+2026,Texas A&M,High Point,71,64,1,Regular Season
+2026,Michigan St,Ohio State,70,66,1,Regular Season
+2026,BYU,UCF,70,63,1,Regular Season
+2026,N Dakota St,Saint Louis,67,66,1,Regular Season
+2026,Gonzaga,Troy,77,76,1,Regular Season
+2026,Houston,Michigan,65,72,1,Regular Season
+2026,Louisville,Saint Louis,67,57,1,Regular Season
+2026,Texas A&M,Kansas,58,60,1,Regular Season
+2026,Idaho,Louisville,59,82,1,Regular Season
+2026,Louisville,Duke,65,73,1,Regular Season
+2026,Saint Louis,Nebraska,58,66,1,Regular Season
+2026,Kansas,Purdue,59,62,1,Regular Season
+2026,Northern Iowa,NC State,64,56,1,Regular Season
+2026,Virginia,Hawai'i,63,61,1,Regular Season
+2026,Idaho,Tennessee St,68,64,1,Regular Season
+2026,Duke,Nebraska,73,74,1,Regular Season
+2026,Howard,Michigan St,65,77,1,Regular Season
+2026,Illinois,Purdue,56,63,1,Regular Season
+2026,Michigan St,TCU,71,62,1,Regular Season
+2026,VCU,Illinois,65,70,1,Regular Season
+2026,NC State,Texas,64,53,1,Regular Season
+2026,South Florida,UCF,73,61,1,Regular Season
+2026,Furman,Gonzaga,66,60,1,Regular Season
+2026,Tennessee,Virginia,63,58,1,Regular Season
+2026,Nebraska,Siena,69,62,1,Regular Season
+2026,UCLA,VCU,75,69,1,Regular Season
+2026,Purdue,Akron,66,61,1,Regular Season
+2026,Gonzaga,UCLA,80,81,1,Regular Season
+2026,Saint Mary's,Florida,65,78,1,Regular Season
+2026,TCU,McNeese,78,82,1,Regular Season
+2026,Texas A&M,McNeese,61,77,1,Regular Season
+2026,Vanderbilt,NC State,48,58,1,Regular Season
+2026,Purdue,North Carolina,73,64,1,Regular Season
+2026,SMU,Howard,69,65,1,Regular Season
+2026,VCU,SMU,82,51,1,Regular Season
+2026,Clemson,CA Baptist,66,62,1,Regular Season
+2026,Hawai'i,UCLA,65,68,1,Regular Season
+2026,Arizona,Houston,78,79,1,Regular Season
+2026,Iowa State,Troy,74,64,1,Regular Season
+2026,UCLA,Akron,62,70,1,Regular Season
+2026,Texas A&M,Long Island,82,51,1,Regular Season
+2026,Howard,Ohio State,78,75,1,Regular Season
+2026,Iowa State,Nebraska,65,61,1,Regular Season
+2026,Gonzaga,Santa Clara,60,84,1,Regular Season
+2026,Missouri,Georgia,67,72,1,Regular Season
+2026,Siena,Kansas,57,76,1,Regular Season
+2026,Clemson,TCU,72,67,1,Regular Season
+2026,Penn,Miami OH,70,81,1,Regular Season
+2026,Texas A&M,Gonzaga,57,59,1,Regular Season
+2026,Hawai'i,Akron,72,64,1,Regular Season
+2026,McNeese,Utah State,79,74,1,Regular Season
+2026,Furman,Howard,68,67,1,Regular Season
+2026,Miami,Wisconsin,60,85,1,Regular Season
+2026,Troy,Alabama,67,64,1,Regular Season
+2026,Alabama,SMU,68,85,1,Regular Season
+2026,Houston,Texas A&M,60,69,1,Regular Season
+2026,Howard,Utah State,62,61,1,Regular Season
+2026,Furman,Miami OH,45,66,1,Regular Season
+2026,St John's,Gonzaga,70,60,1,Regular Season
+2026,High Point,Prairie View,77,47,1,Regular Season
+2026,Siena,Ohio State,58,71,1,Regular Season
+2026,Idaho,South Florida,66,64,1,Regular Season
+2026,Idaho,Illinois,58,67,1,Regular Season
+2026,Florida,Wright St,63,51,1,Regular Season
+2026,Alabama,Kansas,53,77,1,Regular Season
+2026,Troy,Saint Louis,68,60,1,Regular Season
+2026,McNeese,Iowa,83,68,1,Regular Season
+2026,Tennessee St,Troy,52,63,1,Regular Season
+2026,McNeese,Gonzaga,63,66,1,Regular Season
+2026,Hawai'i,Idaho,63,65,1,Regular Season
+2026,Houston,St John's,65,67,1,Regular Season
+2026,Saint Louis,Texas A&M,61,77,1,Regular Season
+2026,Prairie View,Idaho,65,60,1,Regular Season
+2026,Michigan St,Nebraska,72,53,1,Regular Season
+2026,Georgia,Michigan St,60,81,1,Regular Season
+2026,North Carolina,Arkansas,65,75,1,Regular Season
+2026,Ohio State,Louisville,65,88,1,Regular Season
+2026,Wisconsin,Virginia,66,52,1,Regular Season
+2026,Lehigh,TCU,70,87,1,Regular Season
+2026,Northern Iowa,Clemson,56,70,1,Regular Season
+2026,Michigan,Vanderbilt,53,78,1,Regular Season
+2026,St John's,Hofstra,73,72,1,Regular Season
+2026,Michigan,Vanderbilt,51,67,1,Regular Season
+2026,Furman,Wright St,80,68,1,Regular Season
+2026,Alabama,Santa Clara,69,80,1,Regular Season
+2026,Prairie View,Howard,76,73,1,Regular Season
+2026,St John's,Texas,56,50,1,Regular Season
+2026,Santa Clara,Kennesaw St,75,73,1,Regular Season
+2026,UMBC,Furman,59,73,1,Regular Season
+2026,Arizona,Florida,46,55,1,Regular Season
+2026,Alabama,N Dakota St,73,52,1,Regular Season
+2026,McNeese,CA Baptist,68,67,1,Regular Season
+2026,Duke,TCU,80,61,1,Regular Season
+2026,Villanova,North Carolina,62,64,1,Regular Season
+2026,Villanova,Texas,64,49,1,Regular Season
+2026,Texas A&M,Tennessee,64,59,1,Regular Season
+2026,Georgia,Iowa,77,61,1,Regular Season
+2026,Nebraska,Georgia,71,66,1,Regular Season
+2026,Penn,Georgia,55,71,1,Regular Season
+2026,Virginia,Louisville,74,64,1,Regular Season
+2026,Iowa,Purdue,72,69,1,Regular Season
+2026,TCU,Florida,50,77,1,Regular Season
+2026,Penn,Texas Tech,53,55,1,Regular Season
+2026,Michigan,Duke,80,61,1,Regular Season
+2026,Michigan St,Gonzaga,68,49,1,Regular Season
+2026,Texas Tech,Hofstra,92,71,1,Regular Season
+2026,UCLA,Duke,66,79,1,Regular Season
+2026,Penn,Kennesaw St,63,55,1,Regular Season
+2026,Houston,Alabama,77,69,1,Regular Season
+2026,Idaho,Alabama,68,82,1,Regular Season
+2026,Iowa State,Vanderbilt,47,71,1,Regular Season
+2026,Saint Louis,Wisconsin,60,76,1,Regular Season
+2026,Wisconsin,N Dakota St,75,71,1,Regular Season
+2026,Kansas,Siena,79,67,1,Regular Season
+2026,Howard,NC State,66,77,1,Regular Season
+2026,Houston,Arkansas,80,81,1,Regular Season
+2026,Queens,Texas A&M,73,88,1,Regular Season
+2026,NC State,Wright St,66,53,1,Regular Season
+2026,Florida,N Dakota St,84,54,1,Regular Season
+2026,Furman,Vanderbilt,74,77,1,Regular Season
+2026,UCLA,Virginia,67,62,1,Regular Season
+2026,Santa Clara,Duke,70,66,1,Regular Season
+2026,Vanderbilt,Kansas,61,49,1,Regular Season
+2026,Siena,Iowa State,65,64,1,Regular Season
+2026,Missouri,High Point,84,59,1,Regular Season
+2026,Hofstra,Miami OH,70,72,1,Regular Season
+2026,Virginia,Akron,79,77,1,Regular Season
+2026,CA Baptist,Alabama,81,60,1,Regular Season
+2026,Michigan St,CA Baptist,74,56,1,Regular Season
+2026,UMBC,Santa Clara,61,75,1,Regular Season
+2026,St John's,Iowa,69,62,1,Regular Season
+2026,Kennesaw St,BYU,71,69,1,Regular Season
+2026,Texas,Miami,65,77,1,Regular Season
+2026,Purdue,Michigan St,74,64,1,Regular Season
+2026,Texas,Prairie View,66,56,1,Regular Season
+2026,NC State,Furman,66,56,1,Regular Season
+2026,Siena,Houston,54,74,1,Regular Season
+2026,Villanova,Clemson,59,70,1,Regular Season
+2026,Kennesaw St,Miami,71,75,1,Regular Season
+2026,Wisconsin,CA Baptist,60,57,1,Regular Season
+2026,Tennessee,Florida,64,63,1,Regular Season
+2026,UConn,North Carolina,70,71,1,Regular Season
+2026,Penn,Purdue,73,76,1,Regular Season
+2026,Gonzaga,UCLA,62,64,1,Regular Season
+2026,Alabama,Siena,83,56,1,Regular Season
+2026,Long Island,Northern Iowa,75,74,1,Regular Season
+2026,Ohio State,Michigan St,69,72,1,Regular Season
+2026,UConn,Siena,81,52,1,Regular Season
+2026,Vanderbilt,Long Island,72,65,1,Regular Season
+2026,Michigan St,Iowa,68,50,1,Regular Season
+2026,Akron,Tennessee St,52,77,1,Regular Season
+2026,Arkansas,Miami OH,57,74,1,Regular Season
+2026,Saint Louis,Alabama,60,65,1,Regular Season
+2026,Queens,Akron,63,73,1,Regular Season
+2026,South Florida,Penn,59,57,1,Regular Season
+2026,High Point,Louisville,75,71,1,Regular Season
+2026,Wright St,Michigan,72,79,1,Regular Season
+2026,Texas,VCU,74,58,1,Regular Season
+2026,Duke,Illinois,63,68,1,Regular Season
+2026,Nebraska,Gonzaga,78,76,1,Regular Season
+2026,CA Baptist,Miami OH,57,69,1,Regular Season
+2026,Wisconsin,Tennessee St,88,60,1,Regular Season
+2026,Siena,UCLA,68,79,1,Regular Season
+2026,Georgia,Hawai'i,80,74,1,Regular Season
+2026,Villanova,Idaho,78,70,1,Regular Season
+2026,TCU,Furman,85,58,1,Regular Season
+2026,Duke,Texas Tech,72,73,1,Regular Season
+2026,Howard,Michigan,74,90,1,Regular Season
+2026,Northern Iowa,N Dakota St,67,66,1,Regular Season
+2026,Prairie View,TCU,69,80,1,Regular Season
+2026,Purdue,Prairie View,75,55,1,Regular Season
+2026,UCF,NC State,61,57,1,Regular Season
+2026,Miami OH,Furman,75,67,1,Regular Season
+2026,Long Island,Idaho,74,53,1,Regular Season
+2026,High Point,Iowa,55,70,1,Regular Season
+2026,High Point,Kansas,65,87,1,Regular Season
+2026,UCF,UConn,78,62,1,Regular Season
+2026,Prairie View,Tennessee St,75,63,1,Regular Season
+2026,Houston,Saint Mary's,67,65,1,Regular Season
+2026,Louisville,UCF,56,61,1,Regular Season
+2026,Penn,UConn,70,66,1,Regular Season
+2026,N Dakota St,Houston,69,68,1,Regular Season
+2026,Gonzaga,Iowa State,60,65,1,Regular Season
+2026,Ohio State,CA Baptist,71,74,1,Regular Season
+2026,McNeese,Purdue,59,78,1,Regular Season
+2026,Illinois,Gonzaga,71,57,1,Regular Season
+2026,Michigan St,Saint Mary's,68,71,1,Regular Season
+2026,TCU,Virginia,62,78,1,Regular Season
+2026,Clemson,Ohio State,71,78,1,Regular Season
+2026,N Dakota St,Kennesaw St,77,49,1,Regular Season
+2026,Arkansas,Tennessee,65,62,1,Regular Season
+2026,UCF,Michigan St,63,57,1,Regular Season
+2026,Hawai'i,UConn,64,62,1,Regular Season
+2026,High Point,Idaho,61,62,1,Regular Season
+2026,Houston,Alabama,69,57,1,Regular Season
+2026,Duke,Miami,73,59,1,Regular Season
+2026,Howard,Long Island,66,72,1,Regular Season
+2026,Tennessee,Siena,69,70,1,Regular Season
+2026,Georgia,N Dakota St,72,54,1,Regular Season
+2026,Furman,Arizona,78,77,1,Regular Season
+2026,Florida,Long Island,64,55,1,Regular Season
+2026,Troy,Howard,71,58,1,Regular Season
+2026,Gonzaga,Queens,80,57,1,Regular Season
+2026,Houston,CA Baptist,58,64,1,Regular Season
+2026,UConn,Clemson,69,60,1,Regular Season
+2026,Kansas,Texas Tech,73,74,1,Regular Season
+2026,TCU,Vanderbilt,60,75,1,Regular Season
+2026,Arkansas,South Florida,75,69,1,Regular Season
+2026,Texas A&M,Kennesaw St,73,60,1,Regular Season
+2026,Saint Mary's,McNeese,68,64,1,Regular Season
+2026,Kentucky,Nebraska,67,72,1,Regular Season
+2026,Nebraska,UCF,71,54,1,Regular Season
+2026,Iowa,BYU,59,67,1,Regular Season
+2026,Michigan St,Northern Iowa,79,62,1,Regular Season
+2026,Vanderbilt,Tennessee St,68,57,1,Regular Season
+2026,Utah State,Duke,56,62,1,Regular Season
+2026,Gonzaga,Nebraska,74,73,1,Regular Season
+2026,St John's,Idaho,56,62,1,Regular Season
+2026,Texas,Long Island,70,59,1,Regular Season
+2026,Wright St,Michigan St,65,70,1,Regular Season
+2026,Arizona,South Florida,76,65,1,Regular Season
+2026,Saint Mary's,Utah State,68,70,1,Regular Season
+2026,VCU,Saint Louis,62,58,1,Regular Season
+2026,Villanova,Purdue,65,68,1,Regular Season
+2026,St John's,NC State,59,62,1,Regular Season
+2026,Kentucky,Arkansas,85,62,1,Regular Season
+2026,Prairie View,Miami,71,62,1,Regular Season
+2026,Arkansas,Nebraska,72,87,1,Regular Season
+2026,Duke,UMBC,69,58,1,Regular Season
+2026,Wright St,Saint Mary's,70,80,1,Regular Season
+2026,Miami OH,Iowa State,76,75,1,Regular Season
+2026,Hawai'i,Michigan St,63,60,1,Regular Season
+2026,Michigan,NC State,72,75,1,Regular Season
+2026,Duke,Miami,58,77,1,Regular Season
+2026,St John's,Saint Mary's,57,73,1,Regular Season
+2026,Kennesaw St,Michigan,59,73,1,Regular Season
+2026,Prairie View,Saint Mary's,54,68,1,Regular Season
+2026,Arkansas,Saint Mary's,90,68,1,Regular Season
+2026,Illinois,Lehigh,79,76,1,Regular Season
+2026,Vanderbilt,Penn,70,68,1,Regular Season
+2026,Kennesaw St,VCU,61,67,1,Regular Season
+2026,BYU,Gonzaga,74,64,1,Regular Season
+2026,Duke,Miami OH,58,62,1,Regular Season
+2026,Miami,Arizona,47,69,1,Regular Season
+2026,Wright St,Utah State,57,65,1,Regular Season
+2026,Akron,Queens,73,80,1,Regular Season
+2026,Long Island,Howard,76,59,1,Regular Season
+2026,SMU,Kennesaw St,82,77,1,Regular Season
+2026,Purdue,Duke,70,62,1,Regular Season
+2026,Arizona,Illinois,63,78,1,Regular Season
+2026,Illinois,Hofstra,75,54,1,Regular Season
+2026,Wright St,Santa Clara,63,69,1,Regular Season
+2026,Furman,Siena,52,54,1,Regular Season
+2026,TCU,Hawai'i,72,75,1,Regular Season
+2026,SMU,Ohio State,65,72,1,Regular Season
+2026,Purdue,Idaho,73,68,1,Regular Season
+2026,Iowa State,Texas Tech,59,65,1,Regular Season
+2026,VCU,Prairie View,82,65,1,Regular Season
+2026,Kennesaw St,Saint Mary's,64,78,1,Regular Season
+2026,Miami,Kennesaw St,75,69,1,Regular Season
+2026,South Florida,Penn,62,86,1,Regular Season
+2026,Northern Iowa,Howard,65,67,1,Regular Season
+2026,Kennesaw St,Akron,85,54,1,Regular Season
+2026,TCU,BYU,53,57,1,Regular Season
+2026,Kentucky,Prairie View,74,46,1,Regular Season
+2026,Miami,High Point,61,71,1,Regular Season
+2026,Vanderbilt,Illinois,79,66,1,Regular Season
+2026,Queens,Furman,68,72,1,Regular Season

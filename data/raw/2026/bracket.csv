@@ -1,0 +1,68 @@
+slot,round_order,round_name,region,team_a,team_b
+FF_1,0,First Four,WEST,NC State,Texas
+FF_2,0,First Four,MIDWEST,SMU,Miami OH
+FF_3,0,First Four,MIDWEST,Howard,UMBC
+FF_4,0,First Four,SOUTH,Lehigh,Prairie View
+R1_EAST_1,1,Round of 64,EAST,Duke,Siena
+R1_EAST_2,1,Round of 64,EAST,Ohio State,TCU
+R1_EAST_3,1,Round of 64,EAST,St John's,Northern Iowa
+R1_EAST_4,1,Round of 64,EAST,Kansas,CA Baptist
+R1_EAST_5,1,Round of 64,EAST,Louisville,South Florida
+R1_EAST_6,1,Round of 64,EAST,Michigan St,N Dakota St
+R1_EAST_7,1,Round of 64,EAST,UCLA,UCF
+R1_EAST_8,1,Round of 64,EAST,UConn,Furman
+R1_MIDWEST_1,1,Round of 64,MIDWEST,Michigan,@slot:FF_3
+R1_MIDWEST_2,1,Round of 64,MIDWEST,Georgia,Saint Louis
+R1_MIDWEST_3,1,Round of 64,MIDWEST,Texas Tech,Akron
+R1_MIDWEST_4,1,Round of 64,MIDWEST,Alabama,Hofstra
+R1_MIDWEST_5,1,Round of 64,MIDWEST,Tennessee,@slot:FF_2
+R1_MIDWEST_6,1,Round of 64,MIDWEST,Virginia,Wright St
+R1_MIDWEST_7,1,Round of 64,MIDWEST,Kentucky,Santa Clara
+R1_MIDWEST_8,1,Round of 64,MIDWEST,Iowa State,Tennessee St
+R1_SOUTH_1,1,Round of 64,SOUTH,Florida,@slot:FF_4
+R1_SOUTH_2,1,Round of 64,SOUTH,Clemson,Iowa
+R1_SOUTH_3,1,Round of 64,SOUTH,Vanderbilt,McNeese
+R1_SOUTH_4,1,Round of 64,SOUTH,Nebraska,Troy
+R1_SOUTH_5,1,Round of 64,SOUTH,North Carolina,VCU
+R1_SOUTH_6,1,Round of 64,SOUTH,Illinois,Penn
+R1_SOUTH_7,1,Round of 64,SOUTH,Saint Mary's,Texas A&M
+R1_SOUTH_8,1,Round of 64,SOUTH,Houston,Idaho
+R1_WEST_1,1,Round of 64,WEST,Arizona,Long Island
+R1_WEST_2,1,Round of 64,WEST,Villanova,Utah State
+R1_WEST_3,1,Round of 64,WEST,Wisconsin,High Point
+R1_WEST_4,1,Round of 64,WEST,Arkansas,Hawai'i
+R1_WEST_5,1,Round of 64,WEST,BYU,@slot:FF_1
+R1_WEST_6,1,Round of 64,WEST,Gonzaga,Kennesaw St
+R1_WEST_7,1,Round of 64,WEST,Miami,Missouri
+R1_WEST_8,1,Round of 64,WEST,Purdue,Queens
+R2_EAST_1,2,Round of 32,EAST,@slot:R1_EAST_1,@slot:R1_EAST_2
+R2_EAST_2,2,Round of 32,EAST,@slot:R1_EAST_3,@slot:R1_EAST_4
+R2_EAST_3,2,Round of 32,EAST,@slot:R1_EAST_5,@slot:R1_EAST_6
+R2_EAST_4,2,Round of 32,EAST,@slot:R1_EAST_7,@slot:R1_EAST_8
+R2_MIDWEST_1,2,Round of 32,MIDWEST,@slot:R1_MIDWEST_1,@slot:R1_MIDWEST_2
+R2_MIDWEST_2,2,Round of 32,MIDWEST,@slot:R1_MIDWEST_3,@slot:R1_MIDWEST_4
+R2_MIDWEST_3,2,Round of 32,MIDWEST,@slot:R1_MIDWEST_5,@slot:R1_MIDWEST_6
+R2_MIDWEST_4,2,Round of 32,MIDWEST,@slot:R1_MIDWEST_7,@slot:R1_MIDWEST_8
+R2_SOUTH_1,2,Round of 32,SOUTH,@slot:R1_SOUTH_1,@slot:R1_SOUTH_2
+R2_SOUTH_2,2,Round of 32,SOUTH,@slot:R1_SOUTH_3,@slot:R1_SOUTH_4
+R2_SOUTH_3,2,Round of 32,SOUTH,@slot:R1_SOUTH_5,@slot:R1_SOUTH_6
+R2_SOUTH_4,2,Round of 32,SOUTH,@slot:R1_SOUTH_7,@slot:R1_SOUTH_8
+R2_WEST_1,2,Round of 32,WEST,@slot:R1_WEST_1,@slot:R1_WEST_2
+R2_WEST_2,2,Round of 32,WEST,@slot:R1_WEST_3,@slot:R1_WEST_4
+R2_WEST_3,2,Round of 32,WEST,@slot:R1_WEST_5,@slot:R1_WEST_6
+R2_WEST_4,2,Round of 32,WEST,@slot:R1_WEST_7,@slot:R1_WEST_8
+R3_EAST_1,3,Sweet 16,EAST,@slot:R2_EAST_1,@slot:R2_EAST_2
+R3_EAST_2,3,Sweet 16,EAST,@slot:R2_EAST_3,@slot:R2_EAST_4
+R3_MIDWEST_1,3,Sweet 16,MIDWEST,@slot:R2_MIDWEST_1,@slot:R2_MIDWEST_2
+R3_MIDWEST_2,3,Sweet 16,MIDWEST,@slot:R2_MIDWEST_3,@slot:R2_MIDWEST_4
+R3_SOUTH_1,3,Sweet 16,SOUTH,@slot:R2_SOUTH_1,@slot:R2_SOUTH_2
+R3_SOUTH_2,3,Sweet 16,SOUTH,@slot:R2_SOUTH_3,@slot:R2_SOUTH_4
+R3_WEST_1,3,Sweet 16,WEST,@slot:R2_WEST_1,@slot:R2_WEST_2
+R3_WEST_2,3,Sweet 16,WEST,@slot:R2_WEST_3,@slot:R2_WEST_4
+R4_EAST_1,4,Elite Eight,EAST,@slot:R3_EAST_1,@slot:R3_EAST_2
+R4_MIDWEST_1,4,Elite Eight,MIDWEST,@slot:R3_MIDWEST_1,@slot:R3_MIDWEST_2
+R4_SOUTH_1,4,Elite Eight,SOUTH,@slot:R3_SOUTH_1,@slot:R3_SOUTH_2
+R4_WEST_1,4,Elite Eight,WEST,@slot:R3_WEST_1,@slot:R3_WEST_2
+R5_1,5,Final Four,FINAL_FOUR,@slot:R4_EAST_1,@slot:R4_WEST_1
+R5_2,5,Final Four,FINAL_FOUR,@slot:R4_SOUTH_1,@slot:R4_MIDWEST_1
+TITLE,6,Championship,TITLE,@slot:R5_1,@slot:R5_2

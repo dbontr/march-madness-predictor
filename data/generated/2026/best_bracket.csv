@@ -1,0 +1,68 @@
+slot,round_order,round_name,region,winner,is_locked
+FF_1,0,First Four,WEST,NC State,False
+FF_2,0,First Four,MIDWEST,Miami OH,False
+FF_3,0,First Four,MIDWEST,UMBC,False
+FF_4,0,First Four,SOUTH,Prairie View,False
+R1_EAST_1,1,Round of 64,EAST,Duke,False
+R1_EAST_2,1,Round of 64,EAST,TCU,False
+R1_EAST_3,1,Round of 64,EAST,Northern Iowa,False
+R1_EAST_4,1,Round of 64,EAST,CA Baptist,False
+R1_EAST_5,1,Round of 64,EAST,Louisville,False
+R1_EAST_6,1,Round of 64,EAST,Michigan St,False
+R1_EAST_7,1,Round of 64,EAST,UCLA,False
+R1_EAST_8,1,Round of 64,EAST,Furman,False
+R1_MIDWEST_1,1,Round of 64,MIDWEST,Michigan,False
+R1_MIDWEST_2,1,Round of 64,MIDWEST,Saint Louis,False
+R1_MIDWEST_3,1,Round of 64,MIDWEST,Texas Tech,False
+R1_MIDWEST_4,1,Round of 64,MIDWEST,Alabama,False
+R1_MIDWEST_5,1,Round of 64,MIDWEST,Miami OH,False
+R1_MIDWEST_6,1,Round of 64,MIDWEST,Virginia,False
+R1_MIDWEST_7,1,Round of 64,MIDWEST,Kentucky,False
+R1_MIDWEST_8,1,Round of 64,MIDWEST,Tennessee St,False
+R1_SOUTH_1,1,Round of 64,SOUTH,Florida,False
+R1_SOUTH_2,1,Round of 64,SOUTH,Clemson,False
+R1_SOUTH_3,1,Round of 64,SOUTH,McNeese,False
+R1_SOUTH_4,1,Round of 64,SOUTH,Troy,False
+R1_SOUTH_5,1,Round of 64,SOUTH,VCU,False
+R1_SOUTH_6,1,Round of 64,SOUTH,Illinois,False
+R1_SOUTH_7,1,Round of 64,SOUTH,Saint Mary's,False
+R1_SOUTH_8,1,Round of 64,SOUTH,Houston,False
+R1_WEST_1,1,Round of 64,WEST,Arizona,False
+R1_WEST_2,1,Round of 64,WEST,Utah State,False
+R1_WEST_3,1,Round of 64,WEST,Wisconsin,False
+R1_WEST_4,1,Round of 64,WEST,Hawai'i,False
+R1_WEST_5,1,Round of 64,WEST,NC State,False
+R1_WEST_6,1,Round of 64,WEST,Gonzaga,False
+R1_WEST_7,1,Round of 64,WEST,Missouri,False
+R1_WEST_8,1,Round of 64,WEST,Purdue,False
+R2_EAST_1,2,Round of 32,EAST,Duke,False
+R2_EAST_2,2,Round of 32,EAST,CA Baptist,False
+R2_EAST_3,2,Round of 32,EAST,Louisville,False
+R2_EAST_4,2,Round of 32,EAST,UCLA,False
+R2_MIDWEST_1,2,Round of 32,MIDWEST,Michigan,False
+R2_MIDWEST_2,2,Round of 32,MIDWEST,Alabama,False
+R2_MIDWEST_3,2,Round of 32,MIDWEST,Virginia,False
+R2_MIDWEST_4,2,Round of 32,MIDWEST,Kentucky,False
+R2_SOUTH_1,2,Round of 32,SOUTH,Florida,False
+R2_SOUTH_2,2,Round of 32,SOUTH,Troy,False
+R2_SOUTH_3,2,Round of 32,SOUTH,Illinois,False
+R2_SOUTH_4,2,Round of 32,SOUTH,Saint Mary's,False
+R2_WEST_1,2,Round of 32,WEST,Arizona,False
+R2_WEST_2,2,Round of 32,WEST,Wisconsin,False
+R2_WEST_3,2,Round of 32,WEST,NC State,False
+R2_WEST_4,2,Round of 32,WEST,Missouri,False
+R3_EAST_1,3,Sweet 16,EAST,CA Baptist,False
+R3_EAST_2,3,Sweet 16,EAST,UCLA,False
+R3_MIDWEST_1,3,Sweet 16,MIDWEST,Alabama,False
+R3_MIDWEST_2,3,Sweet 16,MIDWEST,Kentucky,False
+R3_SOUTH_1,3,Sweet 16,SOUTH,Florida,False
+R3_SOUTH_2,3,Sweet 16,SOUTH,Illinois,False
+R3_WEST_1,3,Sweet 16,WEST,Arizona,False
+R3_WEST_2,3,Sweet 16,WEST,NC State,False
+R4_EAST_1,4,Elite Eight,EAST,UCLA,False
+R4_MIDWEST_1,4,Elite Eight,MIDWEST,Kentucky,False
+R4_SOUTH_1,4,Elite Eight,SOUTH,Florida,False
+R4_WEST_1,4,Elite Eight,WEST,NC State,False
+R5_1,5,Final Four,FINAL_FOUR,NC State,False
+R5_2,5,Final Four,FINAL_FOUR,Florida,False
+TITLE,6,Championship,TITLE,Florida,False

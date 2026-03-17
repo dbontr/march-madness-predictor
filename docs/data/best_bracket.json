@@ -1,0 +1,540 @@
+{
+  "best_bracket": [
+    {
+      "slot": "FF_1",
+      "round_order": 0,
+      "round_name": "First Four",
+      "region": "WEST",
+      "winner": "NC State",
+      "is_locked": false
+    },
+    {
+      "slot": "FF_2",
+      "round_order": 0,
+      "round_name": "First Four",
+      "region": "MIDWEST",
+      "winner": "Miami OH",
+      "is_locked": false
+    },
+    {
+      "slot": "FF_3",
+      "round_order": 0,
+      "round_name": "First Four",
+      "region": "MIDWEST",
+      "winner": "UMBC",
+      "is_locked": false
+    },
+    {
+      "slot": "FF_4",
+      "round_order": 0,
+      "round_name": "First Four",
+      "region": "SOUTH",
+      "winner": "Prairie View",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_EAST_1",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "EAST",
+      "winner": "Duke",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_EAST_2",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "EAST",
+      "winner": "TCU",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_EAST_3",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "EAST",
+      "winner": "Northern Iowa",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_EAST_4",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "EAST",
+      "winner": "CA Baptist",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_EAST_5",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "EAST",
+      "winner": "Louisville",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_EAST_6",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "EAST",
+      "winner": "Michigan St",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_EAST_7",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "EAST",
+      "winner": "UCLA",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_EAST_8",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "EAST",
+      "winner": "Furman",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_MIDWEST_1",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "MIDWEST",
+      "winner": "Michigan",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_MIDWEST_2",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "MIDWEST",
+      "winner": "Saint Louis",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_MIDWEST_3",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "MIDWEST",
+      "winner": "Texas Tech",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_MIDWEST_4",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "MIDWEST",
+      "winner": "Alabama",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_MIDWEST_5",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "MIDWEST",
+      "winner": "Miami OH",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_MIDWEST_6",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "MIDWEST",
+      "winner": "Virginia",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_MIDWEST_7",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "MIDWEST",
+      "winner": "Kentucky",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_MIDWEST_8",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "MIDWEST",
+      "winner": "Tennessee St",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_SOUTH_1",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "SOUTH",
+      "winner": "Florida",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_SOUTH_2",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "SOUTH",
+      "winner": "Clemson",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_SOUTH_3",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "SOUTH",
+      "winner": "McNeese",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_SOUTH_4",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "SOUTH",
+      "winner": "Troy",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_SOUTH_5",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "SOUTH",
+      "winner": "VCU",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_SOUTH_6",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "SOUTH",
+      "winner": "Illinois",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_SOUTH_7",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "SOUTH",
+      "winner": "Saint Mary's",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_SOUTH_8",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "SOUTH",
+      "winner": "Houston",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_WEST_1",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "WEST",
+      "winner": "Arizona",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_WEST_2",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "WEST",
+      "winner": "Utah State",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_WEST_3",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "WEST",
+      "winner": "Wisconsin",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_WEST_4",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "WEST",
+      "winner": "Hawai'i",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_WEST_5",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "WEST",
+      "winner": "NC State",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_WEST_6",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "WEST",
+      "winner": "Gonzaga",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_WEST_7",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "WEST",
+      "winner": "Missouri",
+      "is_locked": false
+    },
+    {
+      "slot": "R1_WEST_8",
+      "round_order": 1,
+      "round_name": "Round of 64",
+      "region": "WEST",
+      "winner": "Purdue",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_EAST_1",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "EAST",
+      "winner": "Duke",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_EAST_2",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "EAST",
+      "winner": "CA Baptist",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_EAST_3",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "EAST",
+      "winner": "Louisville",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_EAST_4",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "EAST",
+      "winner": "UCLA",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_MIDWEST_1",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "MIDWEST",
+      "winner": "Michigan",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_MIDWEST_2",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "MIDWEST",
+      "winner": "Alabama",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_MIDWEST_3",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "MIDWEST",
+      "winner": "Virginia",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_MIDWEST_4",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "MIDWEST",
+      "winner": "Kentucky",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_SOUTH_1",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "SOUTH",
+      "winner": "Florida",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_SOUTH_2",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "SOUTH",
+      "winner": "Troy",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_SOUTH_3",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "SOUTH",
+      "winner": "Illinois",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_SOUTH_4",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "SOUTH",
+      "winner": "Saint Mary's",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_WEST_1",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "WEST",
+      "winner": "Arizona",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_WEST_2",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "WEST",
+      "winner": "Wisconsin",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_WEST_3",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "WEST",
+      "winner": "NC State",
+      "is_locked": false
+    },
+    {
+      "slot": "R2_WEST_4",
+      "round_order": 2,
+      "round_name": "Round of 32",
+      "region": "WEST",
+      "winner": "Missouri",
+      "is_locked": false
+    },
+    {
+      "slot": "R3_EAST_1",
+      "round_order": 3,
+      "round_name": "Sweet 16",
+      "region": "EAST",
+      "winner": "CA Baptist",
+      "is_locked": false
+    },
+    {
+      "slot": "R3_EAST_2",
+      "round_order": 3,
+      "round_name": "Sweet 16",
+      "region": "EAST",
+      "winner": "UCLA",
+      "is_locked": false
+    },
+    {
+      "slot": "R3_MIDWEST_1",
+      "round_order": 3,
+      "round_name": "Sweet 16",
+      "region": "MIDWEST",
+      "winner": "Alabama",
+      "is_locked": false
+    },
+    {
+      "slot": "R3_MIDWEST_2",
+      "round_order": 3,
+      "round_name": "Sweet 16",
+      "region": "MIDWEST",
+      "winner": "Kentucky",
+      "is_locked": false
+    },
+    {
+      "slot": "R3_SOUTH_1",
+      "round_order": 3,
+      "round_name": "Sweet 16",
+      "region": "SOUTH",
+      "winner": "Florida",
+      "is_locked": false
+    },
+    {
+      "slot": "R3_SOUTH_2",
+      "round_order": 3,
+      "round_name": "Sweet 16",
+      "region": "SOUTH",
+      "winner": "Illinois",
+      "is_locked": false
+    },
+    {
+      "slot": "R3_WEST_1",
+      "round_order": 3,
+      "round_name": "Sweet 16",
+      "region": "WEST",
+      "winner": "Arizona",
+      "is_locked": false
+    },
+    {
+      "slot": "R3_WEST_2",
+      "round_order": 3,
+      "round_name": "Sweet 16",
+      "region": "WEST",
+      "winner": "NC State",
+      "is_locked": false
+    },
+    {
+      "slot": "R4_EAST_1",
+      "round_order": 4,
+      "round_name": "Elite Eight",
+      "region": "EAST",
+      "winner": "UCLA",
+      "is_locked": false
+    },
+    {
+      "slot": "R4_MIDWEST_1",
+      "round_order": 4,
+      "round_name": "Elite Eight",
+      "region": "MIDWEST",
+      "winner": "Kentucky",
+      "is_locked": false
+    },
+    {
+      "slot": "R4_SOUTH_1",
+      "round_order": 4,
+      "round_name": "Elite Eight",
+      "region": "SOUTH",
+      "winner": "Florida",
+      "is_locked": false
+    },
+    {
+      "slot": "R4_WEST_1",
+      "round_order": 4,
+      "round_name": "Elite Eight",
+      "region": "WEST",
+      "winner": "NC State",
+      "is_locked": false
+    },
+    {
+      "slot": "R5_1",
+      "round_order": 5,
+      "round_name": "Final Four",
+      "region": "FINAL_FOUR",
+      "winner": "NC State",
+      "is_locked": false
+    },
+    {
+      "slot": "R5_2",
+      "round_order": 5,
+      "round_name": "Final Four",
+      "region": "FINAL_FOUR",
+      "winner": "Florida",
+      "is_locked": false
+    },
+    {
+      "slot": "TITLE",
+      "round_order": 6,
+      "round_name": "Championship",
+      "region": "TITLE",
+      "winner": "Florida",
+      "is_locked": false
+    }
+  ]
+}

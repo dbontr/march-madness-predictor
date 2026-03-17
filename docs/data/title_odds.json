@@ -1,0 +1,84 @@
+{
+  "title_odds": [
+    {
+      "team": "Florida",
+      "title_prob": 0.3798,
+      "note": "Tier 1 title profile"
+    },
+    {
+      "team": "Wisconsin",
+      "title_prob": 0.1546,
+      "note": "Tier 1 title profile"
+    },
+    {
+      "team": "Illinois",
+      "title_prob": 0.0984,
+      "note": "Strong contender"
+    },
+    {
+      "team": "Kentucky",
+      "title_prob": 0.0914,
+      "note": "Strong contender"
+    },
+    {
+      "team": "Arizona",
+      "title_prob": 0.037,
+      "note": "Long-shot path"
+    },
+    {
+      "team": "Vanderbilt",
+      "title_prob": 0.034,
+      "note": "Long-shot path"
+    },
+    {
+      "team": "Purdue",
+      "title_prob": 0.0248,
+      "note": "Long-shot path"
+    },
+    {
+      "team": "CA Baptist",
+      "title_prob": 0.0234,
+      "note": "Long-shot path"
+    },
+    {
+      "team": "Texas Tech",
+      "title_prob": 0.0224,
+      "note": "Long-shot path"
+    },
+    {
+      "team": "Michigan St",
+      "title_prob": 0.0222,
+      "note": "Long-shot path"
+    },
+    {
+      "team": "Missouri",
+      "title_prob": 0.0182,
+      "note": "Long-shot path"
+    },
+    {
+      "team": "Michigan",
+      "title_prob": 0.0108,
+      "note": "Long-shot path"
+    },
+    {
+      "team": "UCLA",
+      "title_prob": 0.01,
+      "note": "Long-shot path"
+    },
+    {
+      "team": "Houston",
+      "title_prob": 0.0096,
+      "note": "Long-shot path"
+    },
+    {
+      "team": "NC State",
+      "title_prob": 0.0072,
+      "note": "Long-shot path"
+    },
+    {
+      "team": "UCF",
+      "title_prob": 0.0066,
+      "note": "Long-shot path"
+    }
+  ]
+}
