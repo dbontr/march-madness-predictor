@@ -2029,6 +2029,159 @@
     return { summary, advancement, bestBracket, maxRound, slotOdds };
   }
 
+  function addProb(map, key, value) {
+    if (!key) return;
+    const delta = finiteOr(value, 0);
+    if (delta <= 0) return;
+    map.set(key, (map.get(key) || 0) + delta);
+  }
+
+  function contenderDistribution(ref, distBySlot) {
+    const clean = String(ref || "").trim();
+    if (!clean) {
+      return new Map([["TBD", 1]]);
+    }
+    if (clean.startsWith("@slot:")) {
+      const slotRef = clean.split(":", 2)[1];
+      return new Map(distBySlot.get(slotRef) || [["TBD", 1]]);
+    }
+    return new Map([[clean, 1]]);
+  }
+
+  function normalizeDistribution(dist) {
+    const total = [...dist.values()].reduce((acc, val) => acc + finiteOr(val, 0), 0);
+    if (total <= 1e-12) {
+      return new Map([["TBD", 1]]);
+    }
+    const out = new Map();
+    for (const [team, prob] of dist.entries()) {
+      const p = finiteOr(prob, 0) / total;
+      if (p > 1e-9) {
+        out.set(team, p);
+      }
+    }
+    return out.size ? out : new Map([["TBD", 1]]);
+  }
+
+  function solveTournamentDeterministic(model, bracket, snapshot, lockedWinners, performanceStyle) {
+    const snapshotMap = new Map(snapshot.map((row) => [row.team, row]));
+    const ordered = [...bracket].sort((a, b) => (a.round_order - b.round_order) || a.slot.localeCompare(b.slot));
+    const maxRound = Math.max(...ordered.map((row) => row.round_order));
+    const distBySlot = new Map();
+
+    for (const row of ordered) {
+      const slotName = String(row.slot || "");
+      const locked = lockedWinners[slotName];
+      if (locked) {
+        distBySlot.set(slotName, new Map([[locked, 1]]));
+        continue;
+      }
+
+      const distA = contenderDistribution(row.team_a, distBySlot);
+      const distB = contenderDistribution(row.team_b, distBySlot);
+      const winnerDist = new Map();
+
+      for (const [teamA, probA] of distA.entries()) {
+        for (const [teamB, probB] of distB.entries()) {
+          const matchupProb = finiteOr(probA, 0) * finiteOr(probB, 0);
+          if (matchupProb <= 1e-12) continue;
+
+          if (teamA === "TBD" && teamB === "TBD") {
+            addProb(winnerDist, "TBD", matchupProb);
+            continue;
+          }
+          if (teamA === "TBD") {
+            addProb(winnerDist, teamB, matchupProb);
+            continue;
+          }
+          if (teamB === "TBD") {
+            addProb(winnerDist, teamA, matchupProb);
+            continue;
+          }
+
+          const pA = predictMatchup(model, snapshotMap, teamA, teamB, performanceStyle, row.round_order);
+          addProb(winnerDist, teamA, matchupProb * pA);
+          addProb(winnerDist, teamB, matchupProb * (1 - pA));
+        }
+      }
+
+      distBySlot.set(slotName, normalizeDistribution(winnerDist));
+    }
+
+    const advancementProb = new Map();
+    for (const row of ordered) {
+      const slotDist = distBySlot.get(row.slot) || new Map();
+      for (const [team, prob] of slotDist.entries()) {
+        addProb(advancementProb, `${team}||${row.round_order}`, prob);
+      }
+    }
+
+    const teams = [...new Set(snapshot.map((row) => row.team))].sort((a, b) => a.localeCompare(b));
+    const advancement = teams.map((team) => {
+      const out = { team };
+      for (let round = 1; round <= maxRound; round += 1) {
+        out[`reach_round_${round}`] = finiteOr(advancementProb.get(`${team}||${round}`), 0);
+      }
+      return out;
+    });
+    const championCol = `reach_round_${maxRound}`;
+    advancement.sort((a, b) => Number(b[championCol] || 0) - Number(a[championCol] || 0));
+
+    const projectedWinners = { ...lockedWinners };
+    const bestBracket = [];
+    for (const row of ordered) {
+      const teamA = resolveTeam(row.team_a, projectedWinners);
+      const teamB = resolveTeam(row.team_b, projectedWinners);
+      const pTeamA = predictMatchup(model, snapshotMap, teamA, teamB, performanceStyle, row.round_order);
+      let winner = lockedWinners[row.slot] || "";
+      if (!winner) {
+        winner = chooseWinnerFromProb(pTeamA, teamA, teamB, snapshotMap, performanceStyle);
+      }
+      projectedWinners[row.slot] = winner;
+
+      bestBracket.push({
+        slot: row.slot,
+        round_order: row.round_order,
+        round_name: row.round_name,
+        region: row.region,
+        team_a: teamA,
+        team_b: teamB,
+        p_team_a: pTeamA,
+        p_team_b: 1 - pTeamA,
+        winner,
+        is_locked: Boolean(lockedWinners[row.slot]),
+      });
+    }
+
+    const summary = bestBracket.map((row) => ({
+      slot: row.slot,
+      round_order: row.round_order,
+      round_name: row.round_name,
+      region: row.region,
+      team_a: row.team_a,
+      team_b: row.team_b,
+      p_team_a: row.p_team_a,
+      p_team_b: row.p_team_b,
+      team_a_win_rate: row.p_team_a,
+      team_b_win_rate: row.p_team_b,
+      winner: row.winner,
+      matchup_count: 1,
+      matchup_share: 1,
+      is_locked: row.is_locked,
+    }));
+
+    const slotOdds = {};
+    for (const row of ordered) {
+      const slotDist = distBySlot.get(row.slot) || new Map();
+      slotOdds[row.slot] = {};
+      for (const [team, prob] of slotDist.entries()) {
+        slotOdds[row.slot][team] = prob;
+      }
+    }
+
+    return { summary, advancement, bestBracket, maxRound, slotOdds };
+  }
+
   function rankNote(prob) {
     if (prob >= 0.15) return "Tier 1 title profile";
     if (prob >= 0.08) return "Strong contender";
@@ -2178,16 +2331,14 @@
       performanceStyle.calibrator = fitProbabilityCalibrator(trainStats, trainGames, model, performanceStyle);
 
       const holdoutSnapshot = seasonSnapshot(teamStats, context.season);
-      const sim = simulateTournament(
+      const solved = solveTournamentDeterministic(
         model,
         context.bracket,
         holdoutSnapshot,
-        context.simulations,
-        73,
         {},
         performanceStyle,
       );
-      const score = scoreBracketAgainstActual(sim.bestBracket, context.bracket, context.actualBySlot);
+      const score = scoreBracketAgainstActual(solved.bestBracket, context.bracket, context.actualBySlot);
       pointsTotal += score.points;
       normTotal += score.normalized;
       scored += 1;
@@ -2514,7 +2665,6 @@
     const config = await fetchJson("./data/runtime/config.json").catch(() => ({}));
 
     const season = Number(options.season || config.default_season || new Date().getUTCFullYear());
-    const simulations = Number(options.simulations || config.default_simulations || 1600);
     const randomSeed = Number(options.random_seed || 42);
 
     const { teamStats, historical, injuries, aliasMap, quality_report: qualityReport } = await loadRuntimeData(season);
@@ -2567,12 +2717,10 @@
       teamLogos = {};
     }
 
-    const { summary, advancement, bestBracket, maxRound, slotOdds } = simulateTournament(
+    const { summary, advancement, bestBracket, maxRound, slotOdds } = solveTournamentDeterministic(
       model,
       bracket,
       snapshot,
-      simulations,
-      randomSeed,
       lockedWinners,
       performanceStyle,
     );
@@ -2611,7 +2759,8 @@
     return {
       meta: {
         season,
-        simulations,
+        simulations: 0,
+        prediction_mode: "deterministic_elo",
         updated_at: nowIsoNoMillis(),
         training_metrics: {
           logistic: model.metrics,
@@ -2638,6 +2787,7 @@
           backtest_espn_points_optimized: true,
           portfolio_bracket_generation: true,
           data_quality_guards: true,
+          live_bracket_solver: "deterministic",
           seed_gap_feature: false,
         },
         team_logos_count: Object.keys(teamLogos).length,

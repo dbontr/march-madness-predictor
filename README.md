@@ -7,7 +7,7 @@ On every page load (each run), the browser generates predictions fresh:
 1. fetches current ESPN tournament data
 2. applies data-quality guards (dedupe, score sanity, clipping, alias normalization)
 3. trains the ensemble matchup system client-side
-4. simulates the bracket and portfolio alternatives
+4. solves the bracket deterministically (Elo-style matchup probabilities, no Monte Carlo for the live board)
 5. renders updated odds and the projected path
 
 No backend is required.
@@ -82,7 +82,7 @@ At runtime, `docs/live-runtime.js`:
 5. computes weighted performance context (tempo-adjusted margins, recency, round importance, rolling form)
 6. trains an ensemble (logistic + tree + performance + continuous style interaction model)
 7. calibrates probabilities with round-aware calibrators (early vs late rounds)
-8. runs Monte Carlo simulation + portfolio bracket generation
+8. runs deterministic bracket solving + portfolio bracket generation
 9. renders bracket board + title odds + team logos
 
 ## Model Tuning + Backtests

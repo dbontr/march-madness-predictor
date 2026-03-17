@@ -585,7 +585,7 @@
       </div>
       <div class="hero-meta">
         <div class="meta-pill">season <strong id="seasonValue">-</strong></div>
-        <div class="meta-pill">simulations <strong id="simValue">-</strong></div>
+        <div class="meta-pill">mode <strong id="simValue">-</strong></div>
         <div class="meta-pill">updated <strong id="refreshValue">-</strong></div>
       </div>
     </header>
@@ -635,7 +635,8 @@
     const demoData = {
       meta: {
         season: 2026,
-        simulations: 5000,
+        simulations: 0,
+        prediction_mode: "deterministic_elo",
         updated_at: "demo mode"
       },
       title_odds: [
@@ -677,7 +678,6 @@
     const state = {
       data: demoData,
       search: "",
-      matchupsBySlot: new Map(),
       roundNames: new Map(),
       flowResizeBound: false,
       flowRaf: 0,
@@ -685,12 +685,6 @@
     };
 
     const REGION_ORDER = { EAST: 0, WEST: 1, SOUTH: 2, MIDWEST: 3, FINAL_FOUR: 4, TITLE: 5 };
-
-    async function fetchJson(path) {
-      const res = await fetch(path, { cache: "no-store" });
-      if (!res.ok) throw new Error(`Failed to load ${path}`);
-      return res.json();
-    }
 
     function normalizePayload(payload) {
       return {
@@ -728,34 +722,12 @@
       return normalizePayload(payload);
     }
 
-    async function loadFromStaticFiles() {
-      const [summary, titleOdds, bestBracket, logos] = await Promise.all([
-        fetchJson("./data/summary.json"),
-        fetchJson("./data/title_odds.json"),
-        fetchJson("./data/best_bracket.json"),
-        fetchJson("./data/team_logos.json").catch(() => ({ team_logos: {} }))
-      ]);
-      return normalizePayload({
-        meta: summary.meta || demoData.meta,
-        matchups: summary.matchups || [],
-        title_odds: titleOdds.title_odds || [],
-        best_bracket: bestBracket.best_bracket || [],
-        portfolio_brackets: [],
-        team_logos: logos.team_logos || {}
-      });
-    }
-
     async function loadData() {
       try {
         state.data = await loadFromBrowserRuntime();
       } catch (runtimeErr) {
-        console.warn("Browser runtime failed; trying static files", runtimeErr);
-        try {
-          state.data = await loadFromStaticFiles();
-        } catch (staticErr) {
-          console.warn("Static fallback failed; using demo data", staticErr);
-          state.data = demoData;
-        }
+        console.warn("Browser runtime failed; using demo data", runtimeErr);
+        state.data = demoData;
       }
 
       buildIndices();
@@ -763,14 +735,7 @@
     }
 
     function buildIndices() {
-      state.matchupsBySlot = new Map();
       state.roundNames = new Map();
-
-      for (const item of state.data.matchups || []) {
-        const key = String(item.slot || "");
-        if (!state.matchupsBySlot.has(key)) state.matchupsBySlot.set(key, []);
-        state.matchupsBySlot.get(key).push(item);
-      }
 
       for (const item of state.data.best_bracket || []) {
         const roundOrder = Number(item.round_order ?? -1);
@@ -957,89 +922,19 @@
       return values.join(" ").toLowerCase().includes(q);
     }
 
-    function teamKey(team) {
-      return String(team || "").trim().toLowerCase().replace(/\s+/g, " ");
-    }
-
-    function matchupHasTeams(item, teamA, teamB) {
-      const a = teamKey(item?.team_a);
-      const b = teamKey(item?.team_b);
-      const ta = teamKey(teamA);
-      const tb = teamKey(teamB);
-      return (a === ta && b === tb) || (a === tb && b === ta);
-    }
-
-    function matchupProbsForTeams(item, teamA, teamB) {
-      if (!item) return null;
-      const a = teamKey(item.team_a);
-      const b = teamKey(item.team_b);
-      const ta = teamKey(teamA);
-      const tb = teamKey(teamB);
-
-      if (a === ta && b === tb) {
-        return {
-          pA: Number(item.p_team_a),
-          pB: Number(item.p_team_b),
-        };
-      }
-      if (a === tb && b === ta) {
-        return {
-          pA: Number(item.p_team_b),
-          pB: Number(item.p_team_a),
-        };
-      }
-      return null;
-    }
-
-    function pickRepresentativeMatchup(slot, winner, expectedTeamA, expectedTeamB) {
-      const candidates = state.matchupsBySlot.get(String(slot)) || [];
-      if (!candidates.length) return null;
-
-      if (expectedTeamA && expectedTeamB) {
-        const exact = candidates.filter(item => matchupHasTeams(item, expectedTeamA, expectedTeamB));
-        if (exact.length) {
-          exact.sort((a, b) => Number(b.matchup_count ?? 0) - Number(a.matchup_count ?? 0));
-          return exact[0];
-        }
-      }
-
-      let pool = candidates;
-      if (winner) {
-        const matched = candidates.filter(item => String(item.winner || "") === String(winner));
-        if (matched.length) pool = matched;
-      }
-
-      let chosen = pool[0];
-      let bestCount = -1;
-      let bestScore = -1;
-
-      for (const item of pool) {
-        const count = Number(item.matchup_count ?? 0);
-        const aRate = Number(item.team_a_win_rate ?? 0);
-        const bRate = Number(item.team_b_win_rate ?? 0);
-        let score = Math.max(aRate, bRate);
-
-        if (winner) {
-          if (String(item.team_a) === String(winner)) score = aRate;
-          else if (String(item.team_b) === String(winner)) score = bRate;
-        }
-
-        if (count > bestCount || (count === bestCount && score > bestScore)) {
-          bestCount = count;
-          bestScore = score;
-          chosen = item;
-        }
-      }
-
-      return chosen;
-    }
-
     function renderHeader() {
       const meta = state.data.meta || {};
       setText("seasonValue", meta.season ?? "-");
 
       const sims = Number(meta.simulations ?? 0);
-      setText("simValue", sims > 0 ? sims.toLocaleString() : "-");
+      const mode = String(meta.prediction_mode || "").trim();
+      if (mode) {
+        setText("simValue", mode.replaceAll("_", " "));
+      } else if (sims > 0) {
+        setText("simValue", `${sims.toLocaleString()} sims`);
+      } else {
+        setText("simValue", "deterministic");
+      }
 
       setText("refreshValue", meta.updated_at ?? "-");
 
@@ -1177,20 +1072,13 @@
           const winner = String(slotItem.winner || "");
           const plannedTeamA = String(slotItem.team_a || "").trim();
           const plannedTeamB = String(slotItem.team_b || "").trim();
-          const rep = pickRepresentativeMatchup(slotItem.slot, winner, plannedTeamA, plannedTeamB);
-
-          const teamA = String(plannedTeamA || rep?.team_a || winner || "TBD");
-          const teamB = String(plannedTeamB || rep?.team_b || "TBD");
+          const teamA = String(plannedTeamA || winner || "TBD");
+          const teamB = String(plannedTeamB || "TBD");
           let pA = Number(slotItem.p_team_a);
           let pB = Number(slotItem.p_team_b);
-          const repProbs = matchupProbsForTeams(rep, teamA, teamB);
-          if (repProbs) {
-            pA = repProbs.pA;
-            pB = repProbs.pB;
-          }
           if (!Number.isFinite(pA) && Number.isFinite(pB)) pA = 1 - pB;
           if (!Number.isFinite(pB) && Number.isFinite(pA)) pB = 1 - pA;
-          const region = String(rep?.region || slotItem.region || "");
+          const region = String(slotItem.region || "");
 
           if (!searchMatch([slotItem.slot, slotItem.round_name, winner, teamA, teamB, region])) {
             continue;
