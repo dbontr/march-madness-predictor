@@ -868,6 +868,75 @@
     return winners;
   }
 
+  function seedAdjustedProb(baseProb, snapshotMap, teamA, teamB, roundOrder) {
+    if (roundOrder > 2) {
+      return baseProb;
+    }
+    const rowA = snapshotMap.get(teamA);
+    const rowB = snapshotMap.get(teamB);
+    if (!rowA || !rowB) {
+      return baseProb;
+    }
+
+    const seedA = toNumber(rowA.seed);
+    const seedB = toNumber(rowB.seed);
+    if (!isFiniteNumber(seedA) || !isFiniteNumber(seedB) || seedA === seedB) {
+      return baseProb;
+    }
+
+    const gap = Math.abs(seedA - seedB);
+    let floor = 0;
+
+    if (roundOrder === 1) {
+      if (gap >= 10) floor = 0.9;
+      else if (gap >= 8) floor = 0.84;
+      else if (gap >= 6) floor = 0.77;
+      else if (gap >= 4) floor = 0.68;
+    } else if (roundOrder === 2) {
+      if (gap >= 8) floor = 0.8;
+      else if (gap >= 6) floor = 0.74;
+      else if (gap >= 4) floor = 0.66;
+    }
+
+    if (!floor) {
+      return baseProb;
+    }
+
+    if (seedA < seedB) {
+      return Math.max(baseProb, floor);
+    }
+    return Math.min(baseProb, 1 - floor);
+  }
+
+  function chooseWinnerFromProb(probTeamA, teamA, teamB, snapshotMap) {
+    if (teamA === "TBD" && teamB === "TBD") {
+      return "TBD";
+    }
+    if (teamA === "TBD") {
+      return teamB;
+    }
+    if (teamB === "TBD") {
+      return teamA;
+    }
+
+    if (probTeamA > 0.5 + 1e-9) {
+      return teamA;
+    }
+    if (probTeamA < 0.5 - 1e-9) {
+      return teamB;
+    }
+
+    const rowA = snapshotMap.get(teamA);
+    const rowB = snapshotMap.get(teamB);
+    const seedA = toNumber(rowA?.seed);
+    const seedB = toNumber(rowB?.seed);
+    if (isFiniteNumber(seedA) && isFiniteNumber(seedB) && seedA !== seedB) {
+      return seedA < seedB ? teamA : teamB;
+    }
+
+    return teamA.localeCompare(teamB) <= 0 ? teamA : teamB;
+  }
+
   function simulateTournament(model, bracket, snapshot, simulations, randomSeed, lockedWinners) {
     const rng = new SeededRandom(randomSeed);
     const snapshotMap = new Map(snapshot.map((row) => [row.team, row]));
@@ -876,7 +945,6 @@
 
     const probCache = new Map();
     const advancementCounts = new Map();
-    const pathCounts = new Map();
     const summaryAgg = new Map();
 
     function cachedProb(teamA, teamB) {
@@ -892,13 +960,13 @@
 
     for (let sim = 0; sim < simulations; sim += 1) {
       const winners = { ...lockedWinners };
-      const path = [];
 
       for (const row of ordered) {
         const slotName = row.slot;
         const teamA = resolveTeam(row.team_a, winners);
         const teamB = resolveTeam(row.team_b, winners);
-        const pTeamA = cachedProb(teamA, teamB);
+        const baseProb = cachedProb(teamA, teamB);
+        const pTeamA = seedAdjustedProb(baseProb, snapshotMap, teamA, teamB, row.round_order);
 
         let winner = "";
         if (lockedWinners[slotName]) {
@@ -914,7 +982,6 @@
         }
 
         winners[slotName] = winner;
-        path.push({ [slotName]: winner });
 
         const advKey = `${winner}||${row.round_order}`;
         advancementCounts.set(advKey, (advancementCounts.get(advKey) || 0) + 1);
@@ -949,9 +1016,6 @@
           current.is_locked = current.is_locked || Boolean(lockedWinners[slotName]);
         }
       }
-
-      const pathKey = JSON.stringify(path);
-      pathCounts.set(pathKey, (pathCounts.get(pathKey) || 0) + 1);
     }
 
     const teams = [...new Set(snapshot.map((row) => row.team))].sort((a, b) => a.localeCompare(b));
@@ -988,35 +1052,25 @@
       })
       .sort((a, b) => (a.round_order - b.round_order) || a.slot.localeCompare(b.slot));
 
-    let bestPathKey = "";
-    let bestPathCount = -1;
-    for (const [key, count] of pathCounts.entries()) {
-      if (count > bestPathCount) {
-        bestPathCount = count;
-        bestPathKey = key;
-      }
-    }
+    const projectedWinners = { ...lockedWinners };
+    const bestBracket = [];
+    for (const row of ordered) {
+      const teamA = resolveTeam(row.team_a, projectedWinners);
+      const teamB = resolveTeam(row.team_b, projectedWinners);
+      const baseProb = cachedProb(teamA, teamB);
+      const adjustedProb = seedAdjustedProb(baseProb, snapshotMap, teamA, teamB, row.round_order);
+      const winner = lockedWinners[row.slot] || chooseWinnerFromProb(adjustedProb, teamA, teamB, snapshotMap);
+      projectedWinners[row.slot] = winner;
 
-    const bestPath = bestPathKey ? JSON.parse(bestPathKey) : [];
-    const bySlot = new Map(ordered.map((row) => [row.slot, row]));
-    const bestBracket = bestPath
-      .map((item) => {
-        const entries = Object.entries(item);
-        if (!entries.length) return null;
-        const [slotName, winner] = entries[0];
-        const row = bySlot.get(slotName);
-        if (!row) return null;
-        return {
-          slot: slotName,
-          round_order: row.round_order,
-          round_name: row.round_name,
-          region: row.region,
-          winner,
-          is_locked: Boolean(lockedWinners[slotName]),
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => (a.round_order - b.round_order) || a.slot.localeCompare(b.slot));
+      bestBracket.push({
+        slot: row.slot,
+        round_order: row.round_order,
+        round_name: row.round_name,
+        region: row.region,
+        winner,
+        is_locked: Boolean(lockedWinners[row.slot]),
+      });
+    }
 
     return { summary, advancement, bestBracket, maxRound };
   }

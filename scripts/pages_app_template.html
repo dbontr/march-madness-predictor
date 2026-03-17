@@ -279,11 +279,11 @@
     }
 
     .bracket-grid {
-      --board-height: 2200px;
+      --board-height: 1900px;
       display: grid;
-      grid-template-columns: repeat(var(--round-count, 6), minmax(216px, 1fr));
-      gap: 18px;
-      min-width: 1500px;
+      grid-template-columns: repeat(var(--round-count, 9), minmax(196px, 1fr));
+      gap: 16px;
+      min-width: 1760px;
       align-items: start;
       padding: 6px 6px 12px;
     }
@@ -307,6 +307,11 @@
       gap: 3px;
     }
 
+    .round-col[data-center="true"] .round-head {
+      border-color: var(--line-strong);
+      background: rgba(247, 235, 215, 0.96);
+    }
+
     .round-name {
       font-weight: 800;
       font-size: 0.92rem;
@@ -323,6 +328,10 @@
       height: var(--board-height);
     }
 
+    .round-col[data-center="true"] .round-games {
+      height: calc(var(--board-height) * 0.72);
+    }
+
     .game-card {
       border: 1px solid var(--line);
       border-radius: 11px;
@@ -336,7 +345,7 @@
       transform: translateY(-50%);
     }
 
-    .game-card::after {
+    .game-card[data-flow="right"]::after {
       content: "";
       position: absolute;
       top: 50%;
@@ -346,20 +355,8 @@
       opacity: 0.85;
     }
 
-    .round-col[data-round="6"] .game-card::after {
-      display: none;
-    }
-
-    .incoming {
-      display: none;
-    }
-
-    .round-col[data-round="2"] .incoming,
-    .round-col[data-round="3"] .incoming,
-    .round-col[data-round="4"] .incoming,
-    .round-col[data-round="5"] .incoming,
-    .round-col[data-round="6"] .incoming {
-      display: block;
+    .game-card[data-flow="left"]::after {
+      content: "";
       position: absolute;
       top: 50%;
       left: -18px;
@@ -368,38 +365,62 @@
       opacity: 0.85;
     }
 
-    .round-col[data-round="2"] .incoming::before,
-    .round-col[data-round="3"] .incoming::before,
-    .round-col[data-round="4"] .incoming::before,
-    .round-col[data-round="5"] .incoming::before,
-    .round-col[data-round="6"] .incoming::before,
-    .round-col[data-round="2"] .incoming::after,
-    .round-col[data-round="3"] .incoming::after,
-    .round-col[data-round="4"] .incoming::after,
-    .round-col[data-round="5"] .incoming::after,
-    .round-col[data-round="6"] .incoming::after {
+    .game-card[data-flow="none"]::after {
+      display: none;
+    }
+
+    .incoming {
+      display: none;
+    }
+
+    .incoming.incoming-left,
+    .incoming.incoming-right {
+      display: block;
+      position: absolute;
+      top: 50%;
+      width: 18px;
+      border-top: 1px solid var(--line-strong);
+      opacity: 0.85;
+    }
+
+    .incoming.incoming-left {
+      left: -18px;
+    }
+
+    .incoming.incoming-right {
+      right: -18px;
+    }
+
+    .incoming.incoming-left::before,
+    .incoming.incoming-left::after,
+    .incoming.incoming-right::before,
+    .incoming.incoming-right::after {
       content: "";
       position: absolute;
-      left: 0;
-      border-left: 1px solid var(--line-strong);
       width: 0;
       height: var(--branch-half, 22px);
       opacity: 0.85;
     }
 
-    .round-col[data-round="2"] .incoming::before,
-    .round-col[data-round="3"] .incoming::before,
-    .round-col[data-round="4"] .incoming::before,
-    .round-col[data-round="5"] .incoming::before,
-    .round-col[data-round="6"] .incoming::before {
+    .incoming.incoming-left::before,
+    .incoming.incoming-left::after {
+      left: 0;
+      border-left: 1px solid var(--line-strong);
+    }
+
+    .incoming.incoming-right::before,
+    .incoming.incoming-right::after {
+      right: 0;
+      border-right: 1px solid var(--line-strong);
+    }
+
+    .incoming.incoming-left::before,
+    .incoming.incoming-right::before {
       top: calc(-1 * var(--branch-half, 22px));
     }
 
-    .round-col[data-round="2"] .incoming::after,
-    .round-col[data-round="3"] .incoming::after,
-    .round-col[data-round="4"] .incoming::after,
-    .round-col[data-round="5"] .incoming::after,
-    .round-col[data-round="6"] .incoming::after {
+    .incoming.incoming-left::after,
+    .incoming.incoming-right::after {
       top: 0;
     }
 
@@ -575,7 +596,7 @@
 
       <section class="bracket-panel card">
         <div class="panel-title">Bracket Tree</div>
-        <div class="board-note">Cleaner tree view with the projected path and matchup odds by round.</div>
+        <div class="board-note">Mirrored left/right bracket with Final Four and title in the center lane.</div>
         <div class="bracket-scroll">
           <div id="bracketBoard" class="bracket-grid"></div>
         </div>
@@ -896,25 +917,64 @@
         return;
       }
 
-      const rounds = [...new Set(best.map(item => Number(item.round_order ?? -1)).filter(v => v >= 1))].sort((a, b) => a - b);
-      board.style.setProperty("--round-count", String(Math.max(rounds.length, 1)));
+      const LEFT_REGIONS = new Set(["EAST", "WEST"]);
+      const RIGHT_REGIONS = new Set(["SOUTH", "MIDWEST"]);
 
-      const roundOneGames = best.filter(item => Number(item.round_order) === 1).length;
-      const boardHeight = Math.max(1680, roundOneGames * 70);
-      board.style.setProperty("--board-height", `${boardHeight}px`);
-
-      const columns = [];
-      for (const roundOrder of rounds) {
-        const rawItems = best
-          .filter(item => Number(item.round_order) === roundOrder)
+      const roundLabel = (roundOrder, fallback) => state.roundNames.get(roundOrder) || fallback || `Round ${roundOrder}`;
+      const byRound = (roundOrder, regions) =>
+        best
+          .filter(item => Number(item.round_order) === roundOrder && regions.has(String(item.region || "")))
           .sort((a, b) => compareSlots(a.slot, b.slot));
 
-        const gamesInRound = Math.max(rawItems.length, 1);
-        const branchHalf = Math.max(14, boardHeight / (4 * gamesInRound));
+      const centerOrder = { R5_1: 0, TITLE: 1, R5_2: 2 };
+      const centerItems = best
+        .filter(item => Number(item.round_order) === 5 || Number(item.round_order) === 6)
+        .sort((a, b) => {
+          const rankA = centerOrder[String(a.slot)] ?? 99;
+          const rankB = centerOrder[String(b.slot)] ?? 99;
+          return rankA - rankB;
+        });
+
+      const columnsMeta = [
+        { key: "left-r1", type: "left", roundOrder: 1, title: roundLabel(1, "Round of 64"), items: byRound(1, LEFT_REGIONS) },
+        { key: "left-r2", type: "left", roundOrder: 2, title: roundLabel(2, "Round of 32"), items: byRound(2, LEFT_REGIONS) },
+        { key: "left-r3", type: "left", roundOrder: 3, title: roundLabel(3, "Sweet 16"), items: byRound(3, LEFT_REGIONS) },
+        { key: "left-r4", type: "left", roundOrder: 4, title: roundLabel(4, "Elite Eight"), items: byRound(4, LEFT_REGIONS) },
+        { key: "center", type: "center", roundOrder: 5, title: "Final Four + Title", items: centerItems },
+        { key: "right-r4", type: "right", roundOrder: 4, title: roundLabel(4, "Elite Eight"), items: byRound(4, RIGHT_REGIONS) },
+        { key: "right-r3", type: "right", roundOrder: 3, title: roundLabel(3, "Sweet 16"), items: byRound(3, RIGHT_REGIONS) },
+        { key: "right-r2", type: "right", roundOrder: 2, title: roundLabel(2, "Round of 32"), items: byRound(2, RIGHT_REGIONS) },
+        { key: "right-r1", type: "right", roundOrder: 1, title: roundLabel(1, "Round of 64"), items: byRound(1, RIGHT_REGIONS) },
+      ];
+
+      const maxGames = Math.max(
+        ...columnsMeta
+          .filter(column => column.type !== "center")
+          .map(column => Math.max(column.items.length, 1)),
+        1,
+      );
+
+      const boardHeight = Math.max(1900, maxGames * 112);
+      board.style.setProperty("--board-height", `${boardHeight}px`);
+      board.style.setProperty("--round-count", String(columnsMeta.length));
+
+      const centerTop = (slotName) => {
+        if (slotName === "R5_1") return 24;
+        if (slotName === "TITLE") return 50;
+        if (slotName === "R5_2") return 76;
+        return 50;
+      };
+
+      const columns = [];
+      for (const column of columnsMeta) {
+        const gamesInColumn = Math.max(column.items.length, 1);
+        const branchHalf = column.type === "center"
+          ? 20
+          : Math.max(16, boardHeight / (4 * gamesInColumn));
 
         const items = [];
-        for (let idx = 0; idx < rawItems.length; idx += 1) {
-          const slotItem = rawItems[idx];
+        for (let idx = 0; idx < column.items.length; idx += 1) {
+          const slotItem = column.items[idx];
           const winner = String(slotItem.winner || "");
           const rep = pickRepresentativeMatchup(slotItem.slot, winner);
 
@@ -922,7 +982,7 @@
           const teamB = String(rep?.team_b || "TBD");
           const pA = Number(rep?.p_team_a);
           const pB = Number(rep?.p_team_b);
-          const region = String(rep?.region || "");
+          const region = String(rep?.region || slotItem.region || "");
 
           if (!searchMatch([slotItem.slot, slotItem.round_name, winner, teamA, teamB, region])) {
             continue;
@@ -930,11 +990,26 @@
 
           const aWinner = winner && teamA === winner;
           const bWinner = winner && teamB === winner;
-          const topPercent = ((idx + 0.5) / gamesInRound) * 100;
+          const topPercent = column.type === "center"
+            ? centerTop(String(slotItem.slot))
+            : ((idx + 0.5) / gamesInColumn) * 100;
+
+          let incomingClass = "";
+          if (column.type === "left" && column.roundOrder > 1) incomingClass = "incoming-left";
+          if (column.type === "right" && column.roundOrder > 1) incomingClass = "incoming-right";
+          if (column.type === "center") {
+            if (slotItem.slot === "R5_1") incomingClass = "incoming-left";
+            if (slotItem.slot === "R5_2") incomingClass = "incoming-right";
+          }
+
+          const flow = column.type === "left" ? "right" : (column.type === "right" ? "left" : "none");
+          const incomingMarkup = incomingClass
+            ? `<span class="incoming ${incomingClass}" aria-hidden="true"></span>`
+            : "";
 
           items.push(`
-            <article class="game-card" style="--game-top:${topPercent.toFixed(3)}%;--branch-half:${branchHalf.toFixed(1)}px;">
-              <span class="incoming" aria-hidden="true"></span>
+            <article class="game-card" data-flow="${flow}" style="--game-top:${topPercent.toFixed(3)}%;--branch-half:${branchHalf.toFixed(1)}px;">
+              ${incomingMarkup}
               <div class="game-top">
                 <span>${escapeHtml(slotItem.slot)}</span>
                 <span>${escapeHtml(region || slotItem.round_name || "")}</span>
@@ -955,11 +1030,10 @@
 
         if (!items.length) continue;
 
-        const roundName = state.roundNames.get(roundOrder) || `Round ${roundOrder}`;
         columns.push(`
-          <section class="round-col" data-round="${roundOrder}">
+          <section class="round-col" data-round="${column.roundOrder}" data-center="${column.type === "center"}">
             <header class="round-head">
-              <div class="round-name">${escapeHtml(roundName)}</div>
+              <div class="round-name">${escapeHtml(column.title)}</div>
               <div class="round-count">${items.length} games</div>
             </header>
             <div class="round-games">
