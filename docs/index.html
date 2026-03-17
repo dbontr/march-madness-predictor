@@ -630,7 +630,7 @@
     <div class="footer">GitHub Pages runtime: browser-side model + ESPN data, no backend required</div>
   </main>
 
-  <script src="./live-runtime.js"></script>
+  <script src="./live-runtime.js?v=20260317c"></script>
   <script>
     const demoData = {
       meta: {
@@ -678,6 +678,7 @@
     const state = {
       data: demoData,
       search: "",
+      matchupsBySlot: new Map(),
       roundNames: new Map(),
       flowResizeBound: false,
       flowRaf: 0,
@@ -735,7 +736,14 @@
     }
 
     function buildIndices() {
+      state.matchupsBySlot = new Map();
       state.roundNames = new Map();
+
+      for (const item of state.data.matchups || []) {
+        const key = String(item.slot || "");
+        if (!state.matchupsBySlot.has(key)) state.matchupsBySlot.set(key, []);
+        state.matchupsBySlot.get(key).push(item);
+      }
 
       for (const item of state.data.best_bracket || []) {
         const roundOrder = Number(item.round_order ?? -1);
@@ -922,6 +930,39 @@
       return values.join(" ").toLowerCase().includes(q);
     }
 
+    function teamKey(team) {
+      return String(team || "").trim().toLowerCase().replace(/\s+/g, " ");
+    }
+
+    function matchupProbsForTeams(item, teamA, teamB) {
+      if (!item) return null;
+      const a = teamKey(item.team_a);
+      const b = teamKey(item.team_b);
+      const ta = teamKey(teamA);
+      const tb = teamKey(teamB);
+      if (a === ta && b === tb) {
+        return { pA: Number(item.p_team_a), pB: Number(item.p_team_b) };
+      }
+      if (a === tb && b === ta) {
+        return { pA: Number(item.p_team_b), pB: Number(item.p_team_a) };
+      }
+      return null;
+    }
+
+    function pickRepresentativeMatchup(slot, winner) {
+      const candidates = state.matchupsBySlot.get(String(slot)) || [];
+      if (!candidates.length) return null;
+
+      let pool = candidates;
+      if (winner) {
+        const byWinner = candidates.filter(item => String(item.winner || "") === String(winner));
+        if (byWinner.length) pool = byWinner;
+      }
+
+      pool.sort((a, b) => Number(b.matchup_count ?? 0) - Number(a.matchup_count ?? 0));
+      return pool[0];
+    }
+
     function renderHeader() {
       const meta = state.data.meta || {};
       setText("seasonValue", meta.season ?? "-");
@@ -1072,13 +1113,22 @@
           const winner = String(slotItem.winner || "");
           const plannedTeamA = String(slotItem.team_a || "").trim();
           const plannedTeamB = String(slotItem.team_b || "").trim();
-          const teamA = String(plannedTeamA || winner || "TBD");
-          const teamB = String(plannedTeamB || "TBD");
+          const useLegacyFallback = !(plannedTeamA && plannedTeamB);
+          const rep = useLegacyFallback ? pickRepresentativeMatchup(slotItem.slot, winner) : null;
+          const teamA = String(plannedTeamA || rep?.team_a || winner || "TBD");
+          const teamB = String(plannedTeamB || rep?.team_b || "TBD");
           let pA = Number(slotItem.p_team_a);
           let pB = Number(slotItem.p_team_b);
+          if ((!Number.isFinite(pA) || !Number.isFinite(pB)) && rep) {
+            const oriented = matchupProbsForTeams(rep, teamA, teamB);
+            if (oriented) {
+              pA = oriented.pA;
+              pB = oriented.pB;
+            }
+          }
           if (!Number.isFinite(pA) && Number.isFinite(pB)) pA = 1 - pB;
           if (!Number.isFinite(pB) && Number.isFinite(pA)) pB = 1 - pA;
-          const region = String(slotItem.region || "");
+          const region = String(slotItem.region || rep?.region || "");
 
           if (!searchMatch([slotItem.slot, slotItem.round_name, winner, teamA, teamB, region])) {
             continue;

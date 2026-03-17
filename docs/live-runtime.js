@@ -424,6 +424,15 @@
     return `${prefix}_${region}_${idx}`;
   }
 
+  function counterpartSeedInFirstRound(seed) {
+    const s = Number(seed);
+    for (const pair of FIRST_ROUND_SEED_PAIRS) {
+      if (pair[0] === s) return pair[1];
+      if (pair[1] === s) return pair[0];
+    }
+    return Number.NaN;
+  }
+
   function buildBracketFromEvents(ncaaEvents, snapshot) {
     const seedMap = getSeedMap(snapshot);
     const rows = [];
@@ -464,12 +473,28 @@
       if (!REGION_ORDER.includes(game.region)) {
         continue;
       }
+
+      const seedA = toNumber(seedMap.get(game.team_a));
+      const seedB = toNumber(seedMap.get(game.team_b));
       for (const team of [game.team_a, game.team_b]) {
         const seed = toNumber(seedMap.get(team));
         if (isFiniteNumber(seed) && seed >= 1 && seed <= 16) {
           if (!regionSeedTeam[game.region][seed]) {
             regionSeedTeam[game.region][seed] = team;
           }
+        }
+      }
+
+      if (isFiniteNumber(seedA) && !isFiniteNumber(seedB) && game.team_b && game.team_b !== "TBD") {
+        const inferred = counterpartSeedInFirstRound(seedA);
+        if (isFiniteNumber(inferred) && inferred >= 1 && inferred <= 16 && !regionSeedTeam[game.region][inferred]) {
+          regionSeedTeam[game.region][inferred] = game.team_b;
+        }
+      }
+      if (isFiniteNumber(seedB) && !isFiniteNumber(seedA) && game.team_a && game.team_a !== "TBD") {
+        const inferred = counterpartSeedInFirstRound(seedB);
+        if (isFiniteNumber(inferred) && inferred >= 1 && inferred <= 16 && !regionSeedTeam[game.region][inferred]) {
+          regionSeedTeam[game.region][inferred] = game.team_a;
         }
       }
     }
