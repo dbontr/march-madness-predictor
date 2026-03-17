@@ -777,6 +777,10 @@
     return sigmoid(logit * factor);
   }
 
+  function teamSeasonKey(season, team) {
+    return `${Number(season)}|${String(team || "").trim()}`;
+  }
+
   function teamPowerScore(row) {
     const seed = finiteOr(toNumber(row.seed), 8.5);
     const net = finiteOr(toNumber(row.net_rating), 0);
@@ -785,15 +789,229 @@
     const injuries = finiteOr(toNumber(row.injuries_impact), 0);
 
     return (
-      0.72 * net +
-      0.5 * sos +
-      1.9 * (17 - seed) +
-      7 * (recent - 0.5) +
-      15 * injuries
+      0.82 * net +
+      0.62 * sos +
+      0.55 * (17 - seed) +
+      5.5 * (recent - 0.5) +
+      10 * injuries
     );
   }
 
-  function predictMatchup(model, snapshotMap, teamA, teamB) {
+  function styleKeyMetrics(row) {
+    const tempo = finiteOr(toNumber(row.tempo), 0);
+    const fg3 = finiteOr(toNumber(row.fg3_pct), 0);
+    const tov = finiteOr(toNumber(row.tov_pct), 0);
+    const orb = finiteOr(toNumber(row.orb_pct), 0);
+    const drb = finiteOr(toNumber(row.drb_pct), 0);
+    const ftRate = finiteOr(toNumber(row.ft_rate), 0);
+    const off = finiteOr(toNumber(row.adj_offense), 0);
+    const def = -finiteOr(toNumber(row.adj_defense), 0);
+    return {
+      tempo,
+      fg3,
+      tovControl: -tov,
+      orb,
+      drb,
+      ftRate,
+      off,
+      def,
+    };
+  }
+
+  function buildStyleNorm(teamStats) {
+    const sums = {
+      tempo: 0,
+      fg3: 0,
+      tovControl: 0,
+      orb: 0,
+      drb: 0,
+      ftRate: 0,
+      off: 0,
+      def: 0,
+    };
+    const sumsSq = {
+      tempo: 0,
+      fg3: 0,
+      tovControl: 0,
+      orb: 0,
+      drb: 0,
+      ftRate: 0,
+      off: 0,
+      def: 0,
+    };
+    let count = 0;
+    for (const row of teamStats) {
+      const m = styleKeyMetrics(row);
+      Object.keys(sums).forEach((key) => {
+        const val = finiteOr(m[key], 0);
+        sums[key] += val;
+        sumsSq[key] += val * val;
+      });
+      count += 1;
+    }
+    const out = {};
+    Object.keys(sums).forEach((key) => {
+      const meanVal = count > 0 ? sums[key] / count : 0;
+      const variance = count > 0 ? (sumsSq[key] / count) - meanVal * meanVal : 1;
+      out[key] = {
+        mean: meanVal,
+        std: Math.sqrt(Math.max(variance, 1e-6)),
+      };
+    });
+    return out;
+  }
+
+  function zStyle(value, stats, key) {
+    const m = stats[key] || { mean: 0, std: 1 };
+    return (finiteOr(value, m.mean) - m.mean) / (m.std || 1);
+  }
+
+  function archetypeForRow(row, styleNorm) {
+    const m = styleKeyMetrics(row);
+    const tempo = zStyle(m.tempo, styleNorm, "tempo");
+    const fg3 = zStyle(m.fg3, styleNorm, "fg3");
+    const tovControl = zStyle(m.tovControl, styleNorm, "tovControl");
+    const orb = zStyle(m.orb, styleNorm, "orb");
+    const drb = zStyle(m.drb, styleNorm, "drb");
+    const ftRate = zStyle(m.ftRate, styleNorm, "ftRate");
+    const off = zStyle(m.off, styleNorm, "off");
+    const def = zStyle(m.def, styleNorm, "def");
+
+    const scores = {
+      pace_space: 0.85 * tempo + 0.9 * fg3 + 0.45 * off - 0.35 * orb,
+      power_glass: -0.45 * tempo + 0.95 * orb + 0.75 * ftRate + 0.35 * drb,
+      grind_defense: -0.75 * tempo + 0.95 * def + 0.7 * drb + 0.25 * tovControl,
+      pressure_chaos: 0.7 * tempo + 0.85 * def + 0.8 * tovControl,
+      balanced_execution: 0.55 * off + 0.55 * def + 0.55 * tovControl + 0.35 * drb,
+    };
+
+    let bestType = "balanced_execution";
+    let bestScore = Number.NEGATIVE_INFINITY;
+    Object.entries(scores).forEach(([type, score]) => {
+      if (score > bestScore) {
+        bestScore = score;
+        bestType = type;
+      }
+    });
+    return bestType;
+  }
+
+  function buildPerformanceStyleContext(teamStats, games) {
+    const statMap = new Map();
+    teamStats.forEach((row) => {
+      statMap.set(teamSeasonKey(row.season, row.team), row);
+    });
+
+    const baseRating = new Map();
+    const baseValues = [];
+    for (const row of teamStats) {
+      const key = teamSeasonKey(row.season, row.team);
+      const rating = teamPowerScore(row);
+      baseRating.set(key, rating);
+      baseValues.push(rating);
+    }
+    const baseMean = mean(baseValues);
+
+    const gamesByTeam = new Map();
+    const validGames = [];
+    for (const game of games) {
+      const keyA = teamSeasonKey(game.season, game.team_a);
+      const keyB = teamSeasonKey(game.season, game.team_b);
+      if (!statMap.has(keyA) || !statMap.has(keyB)) {
+        continue;
+      }
+      const margin = finiteOr(toNumber(game.score_a), 0) - finiteOr(toNumber(game.score_b), 0);
+      validGames.push({ keyA, keyB, margin });
+      if (!gamesByTeam.has(keyA)) gamesByTeam.set(keyA, []);
+      if (!gamesByTeam.has(keyB)) gamesByTeam.set(keyB, []);
+      gamesByTeam.get(keyA).push({ oppKey: keyB, margin });
+      gamesByTeam.get(keyB).push({ oppKey: keyA, margin: -margin });
+    }
+
+    let rating = new Map(baseRating);
+    for (let iter = 0; iter < 10; iter += 1) {
+      const next = new Map();
+      for (const [key, base] of baseRating.entries()) {
+        const teamGames = gamesByTeam.get(key) || [];
+        if (!teamGames.length) {
+          next.set(key, base);
+          continue;
+        }
+        let acc = 0;
+        let weightTotal = 0;
+        const selfRating = rating.get(key) ?? base;
+        for (const g of teamGames) {
+          const oppRating = rating.get(g.oppKey) ?? baseRating.get(g.oppKey) ?? baseMean;
+          const marginSignal = Math.tanh(g.margin / 11);
+          const actualSoft = 0.5 + 0.5 * marginSignal;
+          const expected = sigmoid((selfRating - oppRating) / 12);
+          const surprise = actualSoft - expected;
+          const oppStrength = sigmoid((oppRating - baseMean) / 12) - 0.5;
+          const performance = oppRating + surprise * (18 + 8 * Math.abs(oppStrength));
+          const weight = 0.65 + 0.35 * Math.abs(marginSignal);
+          acc += performance * weight;
+          weightTotal += weight;
+        }
+        const oppAdjusted = weightTotal > 0 ? acc / weightTotal : base;
+        next.set(key, 0.5 * base + 0.5 * oppAdjusted);
+      }
+      rating = next;
+    }
+
+    const styleNorm = buildStyleNorm(teamStats);
+    const archetypeByTeam = new Map();
+    for (const row of teamStats) {
+      const key = teamSeasonKey(row.season, row.team);
+      archetypeByTeam.set(key, archetypeForRow(row, styleNorm));
+    }
+
+    const styleSum = new Map();
+    const styleCount = new Map();
+    for (const game of validGames) {
+      const aType = archetypeByTeam.get(game.keyA);
+      const bType = archetypeByTeam.get(game.keyB);
+      if (!aType || !bType) continue;
+      const ratingA = rating.get(game.keyA) ?? baseRating.get(game.keyA) ?? baseMean;
+      const ratingB = rating.get(game.keyB) ?? baseRating.get(game.keyB) ?? baseMean;
+      const expected = sigmoid((ratingA - ratingB) / 11.5);
+      const actualSoft = 0.5 + 0.5 * Math.tanh(game.margin / 10);
+      const residual = actualSoft - expected;
+      const pairKey = `${aType}|${bType}`;
+      styleSum.set(pairKey, (styleSum.get(pairKey) || 0) + residual);
+      styleCount.set(pairKey, (styleCount.get(pairKey) || 0) + 1);
+    }
+
+    const archetypes = [
+      "pace_space",
+      "power_glass",
+      "grind_defense",
+      "pressure_chaos",
+      "balanced_execution",
+    ];
+    const styleEdgeByPair = new Map();
+    for (const aType of archetypes) {
+      for (const bType of archetypes) {
+        const abKey = `${aType}|${bType}`;
+        const baKey = `${bType}|${aType}`;
+        const abN = styleCount.get(abKey) || 0;
+        const baN = styleCount.get(baKey) || 0;
+        const abAvg = abN > 0 ? (styleSum.get(abKey) || 0) / abN : 0;
+        const baAvg = baN > 0 ? (styleSum.get(baKey) || 0) / baN : 0;
+        const sample = abN + baN;
+        const shrink = sample / (sample + 30);
+        const edge = 0.5 * (abAvg - baAvg) * shrink;
+        styleEdgeByPair.set(abKey, edge);
+      }
+    }
+
+    return {
+      ratingBySeasonTeam: rating,
+      archetypeBySeasonTeam: archetypeByTeam,
+      styleEdgeByPair,
+    };
+  }
+
+  function predictMatchup(model, snapshotMap, teamA, teamB, performanceStyle) {
     if (!teamA || !teamB || teamA === "TBD" || teamB === "TBD") {
       return 0.5;
     }
@@ -810,18 +1028,27 @@
     const transformed = transformFeatureVector(raw, model);
     const modelProb = sigmoid(dot(model.weights, transformed) + model.bias);
 
-    const powerDelta = teamPowerScore(rowA) - teamPowerScore(rowB);
-    const powerProb = sigmoid(powerDelta / 8.5);
+    const keyA = teamSeasonKey(rowA.season, teamA);
+    const keyB = teamSeasonKey(rowB.season, teamB);
 
-    const seedA = toNumber(rowA.seed);
-    const seedB = toNumber(rowB.seed);
-    const seedProb =
-      isFiniteNumber(seedA) && isFiniteNumber(seedB)
-        ? sigmoid((seedB - seedA) * 0.22)
-        : 0.5;
+    const perfA =
+      performanceStyle?.ratingBySeasonTeam?.get(keyA) ??
+      teamPowerScore(rowA);
+    const perfB =
+      performanceStyle?.ratingBySeasonTeam?.get(keyB) ??
+      teamPowerScore(rowB);
+    const performanceProb = sigmoid((perfA - perfB) / 10.5);
 
-    const blended = 0.48 * modelProb + 0.37 * powerProb + 0.15 * seedProb;
-    return temperedProb(blended, 0.9);
+    const typeA = performanceStyle?.archetypeBySeasonTeam?.get(keyA) || "";
+    const typeB = performanceStyle?.archetypeBySeasonTeam?.get(keyB) || "";
+    const styleEdge =
+      typeA && typeB
+        ? finiteOr(performanceStyle?.styleEdgeByPair?.get(`${typeA}|${typeB}`), 0)
+        : 0;
+    const styleProb = clampProb(0.5 + 0.9 * styleEdge);
+
+    const blended = 0.42 * modelProb + 0.43 * performanceProb + 0.15 * styleProb;
+    return temperedProb(blended, 0.96);
   }
 
   class SeededRandom {
@@ -868,44 +1095,8 @@
     return winners;
   }
 
-  function seedAdjustedProb(baseProb, snapshotMap, teamA, teamB, roundOrder) {
-    if (roundOrder > 2) {
-      return baseProb;
-    }
-    const rowA = snapshotMap.get(teamA);
-    const rowB = snapshotMap.get(teamB);
-    if (!rowA || !rowB) {
-      return baseProb;
-    }
-
-    const seedA = toNumber(rowA.seed);
-    const seedB = toNumber(rowB.seed);
-    if (!isFiniteNumber(seedA) || !isFiniteNumber(seedB) || seedA === seedB) {
-      return baseProb;
-    }
-
-    const gap = Math.abs(seedA - seedB);
-    let floor = 0;
-
-    if (roundOrder === 1) {
-      if (gap >= 10) floor = 0.9;
-      else if (gap >= 8) floor = 0.84;
-      else if (gap >= 6) floor = 0.77;
-      else if (gap >= 4) floor = 0.68;
-    } else if (roundOrder === 2) {
-      if (gap >= 8) floor = 0.8;
-      else if (gap >= 6) floor = 0.74;
-      else if (gap >= 4) floor = 0.66;
-    }
-
-    if (!floor) {
-      return baseProb;
-    }
-
-    if (seedA < seedB) {
-      return Math.max(baseProb, floor);
-    }
-    return Math.min(baseProb, 1 - floor);
+  function seedAdjustedProb(baseProb) {
+    return clampProb(baseProb);
   }
 
   function chooseWinnerFromProb(probTeamA, teamA, teamB, snapshotMap) {
@@ -937,7 +1128,7 @@
     return teamA.localeCompare(teamB) <= 0 ? teamA : teamB;
   }
 
-  function simulateTournament(model, bracket, snapshot, simulations, randomSeed, lockedWinners) {
+  function simulateTournament(model, bracket, snapshot, simulations, randomSeed, lockedWinners, performanceStyle) {
     const rng = new SeededRandom(randomSeed);
     const snapshotMap = new Map(snapshot.map((row) => [row.team, row]));
     const ordered = [...bracket].sort((a, b) => (a.round_order - b.round_order) || a.slot.localeCompare(b.slot));
@@ -952,7 +1143,7 @@
       const key = `${teamA}||${teamB}`;
       const reverse = `${teamB}||${teamA}`;
       if (!probCache.has(key)) {
-        const pA = predictMatchup(model, snapshotMap, teamA, teamB);
+        const pA = predictMatchup(model, snapshotMap, teamA, teamB, performanceStyle);
         probCache.set(key, pA);
         probCache.set(reverse, 1 - pA);
       }
@@ -967,7 +1158,7 @@
         const teamA = resolveTeam(row.team_a, winners);
         const teamB = resolveTeam(row.team_b, winners);
         const baseProb = cachedProb(teamA, teamB);
-        const pTeamA = seedAdjustedProb(baseProb, snapshotMap, teamA, teamB, row.round_order);
+        const pTeamA = seedAdjustedProb(baseProb);
 
         let winner = "";
         if (lockedWinners[slotName]) {
@@ -1061,7 +1252,7 @@
       const teamA = resolveTeam(row.team_a, projectedWinners);
       const teamB = resolveTeam(row.team_b, projectedWinners);
       const baseProb = cachedProb(teamA, teamB);
-      const adjustedProb = seedAdjustedProb(baseProb, snapshotMap, teamA, teamB, row.round_order);
+      const adjustedProb = seedAdjustedProb(baseProb);
       let winner = lockedWinners[row.slot] || "";
       if (!winner) {
         const countA = slotWinnerCounts.get(`${row.slot}||${teamA}`) || 0;
@@ -1204,6 +1395,7 @@
     const snapshot = seasonSnapshot(adjustedTeamStats, season);
 
     const model = trainModel(adjustedTeamStats, historical);
+    const performanceStyle = buildPerformanceStyleContext(adjustedTeamStats, historical);
 
     const window = pickWindow(config, season);
     const firstFourStart = window.first_four_start;
@@ -1249,6 +1441,7 @@
       simulations,
       randomSeed,
       lockedWinners,
+      performanceStyle,
     );
 
     const championCol = `reach_round_${maxRound}`;
