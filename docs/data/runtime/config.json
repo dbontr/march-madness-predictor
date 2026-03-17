@@ -29,5 +29,11 @@
       "first_four_start": "2026-03-17",
       "championship_date": "2026-04-08"
     }
+  },
+  "final_four_pairs": {
+    "2026": [
+      ["EAST", "SOUTH"],
+      ["WEST", "MIDWEST"]
+    ]
   }
 }
