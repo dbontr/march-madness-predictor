@@ -615,7 +615,7 @@
 
       <section class="bracket-panel card">
         <div class="panel-title">Bracket Tree</div>
-        <div class="board-note">Mirrored left/right bracket with separate Final Four and Title Game columns.</div>
+        <div class="board-note">Mirrored left/right bracket with a combined Final Four + Final center lane.</div>
         <div class="bracket-scroll">
           <div id="bracketBoard" class="bracket-grid"></div>
         </div>
@@ -1032,25 +1032,21 @@
           .filter(item => Number(item.round_order) === roundOrder && regions.has(String(item.region || "")))
           .sort((a, b) => compareSlots(a.slot, b.slot));
 
-      const finalFourOrder = { R5_1: 0, R5_2: 1 };
-      const finalFourItems = best
-        .filter(item => Number(item.round_order) === 5)
+      const centerOrder = { R5_1: 0, TITLE: 1, R5_2: 2 };
+      const centerItems = best
+        .filter(item => Number(item.round_order) === 5 || Number(item.round_order) === 6)
         .sort((a, b) => {
-          const rankA = finalFourOrder[String(a.slot)] ?? 99;
-          const rankB = finalFourOrder[String(b.slot)] ?? 99;
+          const rankA = centerOrder[String(a.slot)] ?? 99;
+          const rankB = centerOrder[String(b.slot)] ?? 99;
           return rankA - rankB;
         });
-      const titleItems = best
-        .filter(item => String(item.slot) === "TITLE" || Number(item.round_order) === 6)
-        .sort((a, b) => compareSlots(a.slot, b.slot));
 
       const columnsMeta = [
         { key: "left-r1", type: "left", roundOrder: 1, title: roundLabel(1, "Round of 64"), items: byRound(1, LEFT_REGIONS) },
         { key: "left-r2", type: "left", roundOrder: 2, title: roundLabel(2, "Round of 32"), items: byRound(2, LEFT_REGIONS) },
         { key: "left-r3", type: "left", roundOrder: 3, title: roundLabel(3, "Sweet 16"), items: byRound(3, LEFT_REGIONS) },
         { key: "left-r4", type: "left", roundOrder: 4, title: roundLabel(4, "Elite Eight"), items: byRound(4, LEFT_REGIONS) },
-        { key: "center-ff", type: "final-four", center: true, roundOrder: 5, title: "Final Four", items: finalFourItems },
-        { key: "center-title", type: "title", center: true, roundOrder: 6, title: "Title Game", items: titleItems },
+        { key: "center", type: "center", center: true, roundOrder: 5, title: "Final Four + Final", items: centerItems },
         { key: "right-r4", type: "right", roundOrder: 4, title: roundLabel(4, "Elite Eight"), items: byRound(4, RIGHT_REGIONS) },
         { key: "right-r3", type: "right", roundOrder: 3, title: roundLabel(3, "Sweet 16"), items: byRound(3, RIGHT_REGIONS) },
         { key: "right-r2", type: "right", roundOrder: 2, title: roundLabel(2, "Round of 32"), items: byRound(2, RIGHT_REGIONS) },
@@ -1079,7 +1075,7 @@
       const renderedSlots = [];
       for (const column of columnsMeta) {
         const gamesInColumn = Math.max(column.items.length, 1);
-        const branchHalf = (column.type === "final-four" || column.type === "title")
+        const branchHalf = column.type === "center"
           ? 20
           : Math.max(16, boardHeight / (4 * gamesInColumn));
 
@@ -1101,20 +1097,20 @@
 
           const aWinner = winner && teamA === winner;
           const bWinner = winner && teamB === winner;
-          const topPercent = (column.type === "final-four" || column.type === "title")
+          const topPercent = column.type === "center"
             ? centerTop(String(slotItem.slot))
             : ((idx + 0.5) / gamesInColumn) * 100;
 
           const incomingClasses = [];
           if (column.type === "left" && column.roundOrder > 1) incomingClasses.push("incoming-left");
           if (column.type === "right" && column.roundOrder > 1) incomingClasses.push("incoming-right");
-          if (column.type === "final-four") {
+          if (column.type === "center") {
             if (slotItem.slot === "R5_1") incomingClasses.push("incoming-left");
             if (slotItem.slot === "R5_2") incomingClasses.push("incoming-right");
           }
 
           let flow = "none";
-          if (column.type === "left" || column.type === "final-four") flow = "right";
+          if (column.type === "left" || column.type === "center") flow = "right";
           if (column.type === "right") flow = "left";
 
           const incomingMarkup = incomingClasses
