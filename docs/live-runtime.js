@@ -374,16 +374,20 @@
     });
   }
 
-  async function fetchJson(url) {
-    const res = await fetch(url, { cache: "no-store" });
+  async function fetchJson(url, options = {}) {
+    const target = String(url || "");
+    const cacheMode = options.cache || (target.startsWith("./") ? "default" : "no-store");
+    const res = await fetch(url, { cache: cacheMode });
     if (!res.ok) {
       throw new Error(`Failed to fetch ${url}: HTTP ${res.status}`);
     }
     return res.json();
   }
 
-  async function fetchText(url) {
-    const res = await fetch(url, { cache: "no-store" });
+  async function fetchText(url, options = {}) {
+    const target = String(url || "");
+    const cacheMode = options.cache || (target.startsWith("./") ? "default" : "no-store");
+    const res = await fetch(url, { cache: cacheMode });
     if (!res.ok) {
       throw new Error(`Failed to fetch ${url}: HTTP ${res.status}`);
     }
@@ -449,19 +453,65 @@
     return out;
   }
 
-  async function fetchScoreboardRange(startYmd, endYmd) {
-    const out = [];
-    const days = enumerateDays(startYmd, endYmd);
+  async function mapWithConcurrency(items, limit, mapper) {
+    const pool = Math.max(1, Math.min(items.length || 1, Math.round(finiteOr(limit, 4))));
+    const out = new Array(items.length);
+    let cursor = 0;
 
-    for (const day of days) {
-      const url = `${SCOREBOARD_URL}?dates=${ymdCompact(day)}&groups=50&limit=1000`;
-      const payload = await fetchJson(url);
-      const events = payload.events || [];
-      for (const event of events) {
-        out.push({ day, event });
+    async function worker() {
+      while (cursor < items.length) {
+        const index = cursor;
+        cursor += 1;
+        out[index] = await mapper(items[index], index);
       }
     }
 
+    const workers = [];
+    for (let i = 0; i < pool; i += 1) {
+      workers.push(worker());
+    }
+    await Promise.all(workers);
+    return out;
+  }
+
+  async function fetchScoreboardRange(startYmd, endYmd, options = {}) {
+    const days = enumerateDays(startYmd, endYmd);
+    const cacheMinutes = clampNumber(finiteOr(options.cache_minutes, 20), 0, 24 * 60);
+    const cacheKey = `mmp:scoreboard:v2:${startYmd}:${endYmd}`;
+    const now = Date.now();
+    if (cacheMinutes > 0) {
+      const cached = safeReadLocalStorageJson(cacheKey);
+      if (
+        cached &&
+        isFiniteNumber(cached.created_at) &&
+        (now - cached.created_at) < cacheMinutes * 60 * 1000 &&
+        Array.isArray(cached.rows)
+      ) {
+        return cached.rows;
+      }
+    }
+
+    const batches = await mapWithConcurrency(
+      days,
+      Math.round(clampNumber(finiteOr(options.concurrency, 6), 1, 24)),
+      async (day) => {
+        try {
+          const url = `${SCOREBOARD_URL}?dates=${ymdCompact(day)}&groups=50&limit=1000`;
+          const payload = await fetchJson(url, { cache: "no-store" });
+          const events = payload.events || [];
+          return events.map((event) => ({ day, event }));
+        } catch {
+          return [];
+        }
+      },
+    );
+    const out = batches.flat();
+    if (cacheMinutes > 0) {
+      safeWriteLocalStorageJson(cacheKey, {
+        created_at: now,
+        rows: out,
+      });
+    }
     return out;
   }
 
@@ -5657,35 +5707,62 @@
     return out;
   }
 
-  async function fetchTeamLogos(targetTeams, aliasMap) {
-    const payload = await fetchJson(TEAMS_URL);
-    const entries = payload?.sports?.[0]?.leagues?.[0]?.teams || [];
-    const lookup = {};
+  async function fetchTeamLogos(targetTeams, aliasMap, options = {}) {
+    const cacheMinutes = clampNumber(finiteOr(options.cache_minutes, 12 * 60), 0, 7 * 24 * 60);
+    const cacheKey = "mmp:team-logos:v2";
+    const now = Date.now();
+    let lookup = null;
 
-    for (const entry of entries) {
-      const team = entry?.team || {};
-      const logo = (team?.logos?.[0]?.href || "").trim();
-      if (!logo) continue;
-
-      const names = [
-        team.displayName,
-        team.shortDisplayName,
-        team.nickname,
-        team.location,
-        team.abbreviation,
-        [team.location, team.name].filter(Boolean).join(" "),
-      ].filter(Boolean);
-
-      names.forEach((name) => {
-        lookup[canonicalName(maybeAlias(name, aliasMap))] = logo;
-      });
-    }
-    Object.entries(MANUAL_LOGO_OVERRIDES).forEach(([name, logo]) => {
-      const key = canonicalName(maybeAlias(name, aliasMap));
-      if (!lookup[key] && logo) {
-        lookup[key] = logo;
+    if (cacheMinutes > 0) {
+      const cached = safeReadLocalStorageJson(cacheKey);
+      if (
+        cached &&
+        isFiniteNumber(cached.created_at) &&
+        (now - cached.created_at) < cacheMinutes * 60 * 1000 &&
+        cached.lookup &&
+        typeof cached.lookup === "object"
+      ) {
+        lookup = cached.lookup;
       }
-    });
+    }
+
+    if (!lookup) {
+      const payload = await fetchJson(TEAMS_URL, { cache: "no-store" });
+      const entries = payload?.sports?.[0]?.leagues?.[0]?.teams || [];
+      lookup = {};
+
+      for (const entry of entries) {
+        const team = entry?.team || {};
+        const logo = (team?.logos?.[0]?.href || "").trim();
+        if (!logo) continue;
+
+        const names = [
+          team.displayName,
+          team.shortDisplayName,
+          team.nickname,
+          team.location,
+          team.abbreviation,
+          [team.location, team.name].filter(Boolean).join(" "),
+        ].filter(Boolean);
+
+        names.forEach((name) => {
+          lookup[canonicalName(maybeAlias(name, aliasMap))] = logo;
+        });
+      }
+      Object.entries(MANUAL_LOGO_OVERRIDES).forEach(([name, logo]) => {
+        const key = canonicalName(maybeAlias(name, aliasMap));
+        if (!lookup[key] && logo) {
+          lookup[key] = logo;
+        }
+      });
+
+      if (cacheMinutes > 0) {
+        safeWriteLocalStorageJson(cacheKey, {
+          created_at: now,
+          lookup,
+        });
+      }
+    }
 
     const result = {};
     [...new Set(targetTeams.map((name) => String(name || "").trim()).filter(Boolean))].forEach((team) => {
@@ -5810,7 +5887,10 @@
     const resultsEnd = minYmd(todayYmdUtc(), championshipDate);
     const fetchEnd = maxYmd(firstRoundCaptureEnd, resultsEnd);
 
-    const scoreboardRows = await fetchScoreboardRange(firstFourStart, fetchEnd);
+    const scoreboardRows = await fetchScoreboardRange(firstFourStart, fetchEnd, {
+      cache_minutes: clampNumber(finiteOr(liveCfg.scoreboard_cache_minutes, 20), 0, 24 * 60),
+      concurrency: Math.round(clampNumber(finiteOr(liveCfg.scoreboard_concurrency, 6), 1, 24)),
+    });
     const ncaaEvents = extractNcaaEvents(scoreboardRows, aliasMap);
 
     let bracketEvents = ncaaEvents.filter(
@@ -5838,10 +5918,15 @@
     const lockedWinners = applyKnownResults(bracket, knownResults);
 
     let teamLogos = {};
-    try {
-      teamLogos = await fetchTeamLogos(snapshot.map((row) => row.team), aliasMap);
-    } catch {
-      teamLogos = {};
+    const fetchTeamLogosEnabled = liveCfg.fetch_team_logos !== false;
+    if (fetchTeamLogosEnabled) {
+      try {
+        teamLogos = await fetchTeamLogos(snapshot.map((row) => row.team), aliasMap, {
+          cache_minutes: clampNumber(finiteOr(liveCfg.team_logo_cache_minutes, 12 * 60), 0, 7 * 24 * 60),
+        });
+      } catch {
+        teamLogos = {};
+      }
     }
     const eventLogos = logoMapFromEvents(ncaaEvents, aliasMap);
     const staticLogoOverrides = await fetchStaticLogoOverrides(aliasMap).catch(() => ({}));

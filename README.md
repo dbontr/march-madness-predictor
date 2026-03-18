@@ -103,6 +103,10 @@ At runtime, `docs/live-runtime.js`:
   - `live_runtime.fast_models`
   - `live_runtime.max_seasons`
   - `live_runtime.game_cap`
+  - `live_runtime.scoreboard_cache_minutes`
+  - `live_runtime.scoreboard_concurrency`
+  - `live_runtime.fetch_team_logos`
+  - `live_runtime.team_logo_cache_minutes`
 
 For GitHub Pages stability, keep `model_tuning.enabled` set to `false` and use `model_params` from your latest benchmark run.
 

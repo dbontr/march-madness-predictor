@@ -54,7 +54,11 @@
     "fast_models": true,
     "max_seasons": 5,
     "game_cap": 2600,
-    "include_postseason": true
+    "include_postseason": true,
+    "scoreboard_cache_minutes": 20,
+    "scoreboard_concurrency": 8,
+    "fetch_team_logos": true,
+    "team_logo_cache_minutes": 720
   },
   "benchmark": {
     "holdout_max_seasons": "all",
