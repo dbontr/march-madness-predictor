@@ -1892,7 +1892,9 @@
       const defB = def.get(keyB) ?? 0;
 
       const expectedMargin = (offA + defA) - (offB + defB);
-      const expectedWin = normalCdf(expectedMargin / Math.max(3, finiteOr(tuning.margin_sigma_base, 9.4)));
+      const expectedWin = normalCdf(
+        expectedMargin / Math.max(3, finiteOr(tuning.margin_sigma_base, DEFAULT_TUNING.margin_sigma_base)),
+      );
       const surprise = Math.abs(game.outcomeSoft - expectedWin);
       const marginSignal = Math.abs(Math.tanh(game.adjustedMargin / 13));
       const baseK = finiteOr(tuning.elo_k_base, 0.095);
@@ -1997,7 +1999,7 @@
 
   function computeTeamVarianceByTeam(gamesByTeam, offByTeam, defByTeam, tuning) {
     const out = new Map();
-    const baseSigma = finiteOr(tuning.margin_sigma_base, 9.4);
+    const baseSigma = finiteOr(tuning.margin_sigma_base, DEFAULT_TUNING.margin_sigma_base);
     for (const [key, teamGames] of gamesByTeam.entries()) {
       if (!teamGames.length) {
         out.set(key, baseSigma);
@@ -2462,7 +2464,8 @@
     const uncertaintyB = teamUncertainty(performanceStyle, rowB.season, teamB);
     const matchupUncertainty = (uncertaintyA + uncertaintyB) / 2;
     const confidenceScale = clampNumber(1 - tuning.uncertainty_confidence_scale * matchupUncertainty, 0.35, 1);
-    const confidenceAdjusted = sigmoid(logit(calibratedProb) * confidenceScale);
+    const roundSharpen = 1 + 0.07 * Math.max(0, roundOrder - 1);
+    const confidenceAdjusted = sigmoid(logit(calibratedProb) * confidenceScale * roundSharpen);
     return temperedProb(confidenceAdjusted, 0.98);
   }
 
