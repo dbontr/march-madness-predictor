@@ -202,6 +202,38 @@
       background: #fffdf8;
     }
 
+    .playin-section {
+      display: none;
+    }
+
+    .playin-section.active {
+      display: block;
+    }
+
+    .playin-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .playin-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fffdf8;
+      overflow: hidden;
+    }
+
+    .playin-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 8px;
+      font-size: 0.7rem;
+      font-family: var(--mono);
+      color: var(--muted);
+      background: #f7efe0;
+      border-bottom: 1px solid var(--line);
+    }
+
     .team-meta {
       min-width: 0;
       display: grid;
@@ -616,6 +648,11 @@
           </div>
         </div>
 
+        <div id="playInSection" class="playin-section">
+          <div class="panel-title">Play-In Picks</div>
+          <div id="playInGames" class="playin-list"></div>
+        </div>
+
         <div>
           <div class="panel-title">Title Odds</div>
           <div id="titleOdds" class="odds-list"></div>
@@ -766,6 +803,7 @@
       if (lockedCount > 0) {
         parts.push(`${lockedCount} completed games are locked`);
       }
+      parts.push("use Play-In Picks to fill any Round of 64 TBD slots");
       return `${parts.join(" \u2022 ")}.`;
     }
 
@@ -1112,6 +1150,60 @@
       `).join("");
     }
 
+    function renderPlayInPicks() {
+      const section = document.getElementById("playInSection");
+      const container = document.getElementById("playInGames");
+      if (!section || !container) {
+        return;
+      }
+
+      const games = (state.data.best_bracket || [])
+        .filter(item => Number(item.round_order) === 0)
+        .sort((a, b) => compareSlots(a.slot, b.slot));
+
+      if (!state.builderMode || !games.length) {
+        section.classList.remove("active");
+        container.innerHTML = "";
+        return;
+      }
+
+      section.classList.add("active");
+      container.innerHTML = games.map((item) => {
+        const slotName = String(item.slot || "");
+        const teamA = String(item.team_a || "TBD");
+        const teamB = String(item.team_b || "TBD");
+        const selectedTeam = String(state.userPicks?.[slotName] || "");
+        const aPicked = selectedTeam && teamKey(selectedTeam) === teamKey(teamA);
+        const bPicked = selectedTeam && teamKey(selectedTeam) === teamKey(teamB);
+        const pickableA = state.builderMode && !item.is_locked && teamKey(teamA) !== "tbd";
+        const pickableB = state.builderMode && !item.is_locked && teamKey(teamB) !== "tbd";
+        const pA = Number(item.p_team_a);
+        const pB = Number(item.p_team_b);
+        const status = item.is_locked
+          ? "locked"
+          : (selectedTeam ? "selected" : "choose winner");
+
+        return `
+          <article class="playin-card">
+            <div class="playin-head">
+              <span>${escapeHtml(slotName)}</span>
+              <span>${escapeHtml(status)}</span>
+            </div>
+            <div class="team-row ${aPicked ? "user-picked" : ""} ${item.is_locked ? "locked" : ""} ${pickableA ? "pickable" : ""}" ${pickableA ? `role="button" tabindex="0"` : ""} data-slot="${escapeAttr(slotName)}" data-team="${escapeAttr(teamA)}" data-pickable="${pickableA ? "true" : "false"}">
+              ${logoMarkup(teamA)}
+              <span class="team-label"><span class="team-name-text">${escapeHtml(teamA)}</span></span>
+              <span class="team-pct">${pct(pA)}</span>
+            </div>
+            <div class="team-row ${bPicked ? "user-picked" : ""} ${item.is_locked ? "locked" : ""} ${pickableB ? "pickable" : ""}" ${pickableB ? `role="button" tabindex="0"` : ""} data-slot="${escapeAttr(slotName)}" data-team="${escapeAttr(teamB)}" data-pickable="${pickableB ? "true" : "false"}">
+              ${logoMarkup(teamB)}
+              <span class="team-label"><span class="team-name-text">${escapeHtml(teamB)}</span></span>
+              <span class="team-pct">${pct(pB)}</span>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
     function renderBracketBoard() {
       const board = document.getElementById("bracketBoard");
       const best = state.data.best_bracket || [];
@@ -1289,6 +1381,7 @@
       updateControlButtons();
       renderHeader();
       renderPickStatus();
+      renderPlayInPicks();
       renderTitleOdds();
       renderBracketBoard();
     }
@@ -1359,6 +1452,22 @@
     });
 
     document.getElementById("bracketBoard").addEventListener("keydown", async (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      if (state.pickRequestInFlight) return;
+      const payload = rowPickPayloadFromTarget(event.target);
+      if (!payload) return;
+      event.preventDefault();
+      await toggleUserPick(payload.slot, payload.team);
+    });
+
+    document.getElementById("playInGames").addEventListener("click", async (event) => {
+      if (state.pickRequestInFlight) return;
+      const payload = rowPickPayloadFromTarget(event.target);
+      if (!payload) return;
+      await toggleUserPick(payload.slot, payload.team);
+    });
+
+    document.getElementById("playInGames").addEventListener("keydown", async (event) => {
       if (event.key !== "Enter" && event.key !== " ") return;
       if (state.pickRequestInFlight) return;
       const payload = rowPickPayloadFromTarget(event.target);
