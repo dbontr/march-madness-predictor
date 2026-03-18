@@ -1,18 +1,26 @@
 {
-  "generated_at": "2026-03-18T04:44:07.841Z",
+  "generated_at": "2026-03-18T23:11:12.943Z",
   "target_season": 2026,
   "seasons": [
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
     2024,
     2025,
     2026
   ],
   "include_postseason": true,
-  "include_market_lines": true,
-  "games": 18739,
-  "team_rows": 2145,
-  "unique_teams": 2145,
-  "market_rows": 4551,
-  "min_game_date": "2023-11-06",
+  "include_market_lines": false,
+  "games": 64963,
+  "team_rows": 7290,
+  "unique_teams": 7290,
+  "market_rows": 0,
+  "min_game_date": "2015-11-13",
   "max_game_date": "2026-03-18",
-  "cache_file": "/Users/dbont/Documents/GitHub/march-madness-predictor/data/generated/2026/summary_market_cache.json"
+  "cache_file": null
 }

@@ -13,8 +13,13 @@ Usage:
 Options:
   --season <year>                     Target season (default: config default_season)
   --trials <n>                        Number of random candidates (base params included automatically)
+  --all-years                         Use all historical years for tournament + regular contexts
   --holdout-seasons <n|all>           Number of historical seasons to backtest
+  --loso                              Use all prior seasons for leave-one-season-out by default
+  --no-loso                           Disable LOSO default behavior (respect season caps)
   --regular-max-seasons <n|all>       Number of seasons for game backtests
+  --strict-no-leakage                 Enforce strict chronological train/test separation
+  --allow-leakage                     Disable strict chronological leakage checks
   --splits <csv>                      Within-season game backtest split points, e.g. 0.65,0.8,0.9
   --exclude-postseason                Exclude postseason games from game backtests
   --regular-min-train-games <n>       Min training games for regular-season contexts
@@ -45,10 +50,20 @@ Options:
   --full-rescore-top-k <n>            Full-fidelity rescore of best K search candidates
   --tournament-source <mode>          Tournament eval source: hybrid|historical_games|none
   --tournament-context-limit <n>      Max tournament holdout contexts during search
+  --tournament-contexts-per-candidate <n>
+                                      Tournament contexts scored per candidate (rotating subset, 0=all)
   --tournament-train-game-cap <n>     Max training games per tournament context during search
   --regular-context-limit <n>         Max regular-season contexts during search
+  --regular-contexts-per-candidate <n>
+                                      Regular contexts scored per candidate (rotating subset, 0=all)
   --regular-train-game-cap <n>        Max training games per regular context during search
   --regular-test-game-cap <n>         Max test games per regular context during search
+  --search-recent-contexts-anchor <n> Always include N most-recent contexts in search subsets
+  --min-eval-rate <n>                 Target minimum candidates/sec during search (0 disables)
+  --no-speed-guard                    Disable adaptive speed guard
+  --speed-guard-grace-evals <n>       Delay speed guard until N candidates scored
+  --speed-guard-cooldown <n>          Min candidates between speed-guard adjustments
+  --speed-guard-min-contexts <n>      Floor per-candidate contexts when speed guard reduces load
   --phase-stagnation-patience <n>     Stop a phase after N stagnant rounds/passes
   --phase-stagnation-min-gain <n>     Gain threshold to count as non-stagnant phase progress
   --early-stop-patience <n>           Stop after N scored candidates without meaningful gain
@@ -62,9 +77,20 @@ Options:
                                       Regular objective weight for brier skill
   --regular-objective-accuracy-weight <n>
                                       Regular objective weight for accuracy
+  --robust-std-weight <n>             Tournament robust penalty on season variance
+  --robust-downside-weight <n>        Tournament reward for downside quantile
+  --robust-downside-quantile <n>      Tournament downside quantile level (0.01-0.5)
+  --regular-robust-std-weight <n>     Regular objective robust penalty on context variance
+  --regular-robust-downside-weight <n>
+                                      Regular objective reward for downside quantile
+  --regular-robust-downside-quantile <n>
+                                      Regular downside quantile level (0.01-0.5)
   --accuracy-priority                 Shortcut: emphasize regular-game accuracy in objective
   --tournament-weight <n>             Combined objective weight for tournament benchmark
   --regular-weight <n>                Combined objective weight for regular-season benchmark
+  --ensemble-top-k <n>                Evaluate weighted top-K parameter ensemble candidate
+  --ensemble-temperature <n>          Softmax temperature for top-K ensemble weighting
+  --no-ensemble                       Disable top-K ensemble evaluation
   --random-seed <n>                   Benchmark random seed
   --skip-tournament                   Disable tournament benchmark objective
   --skip-regular                      Disable regular-season benchmark objective
@@ -121,6 +147,12 @@ function parseArgs(argv) {
       i += 1;
       continue;
     }
+    if (arg === "--all-years") {
+      out.benchmarkOptions.leave_one_season_out = true;
+      out.benchmarkOptions.holdout_max_seasons = "all";
+      out.benchmarkOptions.regular_max_seasons = "all";
+      continue;
+    }
     if (arg === "--holdout-seasons" && next) {
       if (String(next).trim().toLowerCase() === "all") {
         out.benchmarkOptions.holdout_max_seasons = "all";
@@ -130,6 +162,14 @@ function parseArgs(argv) {
       i += 1;
       continue;
     }
+    if (arg === "--loso") {
+      out.benchmarkOptions.leave_one_season_out = true;
+      continue;
+    }
+    if (arg === "--no-loso") {
+      out.benchmarkOptions.leave_one_season_out = false;
+      continue;
+    }
     if (arg === "--regular-max-seasons" && next) {
       if (String(next).trim().toLowerCase() === "all") {
         out.benchmarkOptions.regular_max_seasons = "all";
@@ -137,6 +177,14 @@ function parseArgs(argv) {
         out.benchmarkOptions.regular_max_seasons = Math.round(parseNumber(next, NaN));
       }
       i += 1;
+      continue;
+    }
+    if (arg === "--strict-no-leakage") {
+      out.benchmarkOptions.strict_no_leakage = true;
+      continue;
+    }
+    if (arg === "--allow-leakage") {
+      out.benchmarkOptions.strict_no_leakage = false;
       continue;
     }
     if (arg === "--splits" && next) {
@@ -289,6 +337,11 @@ function parseArgs(argv) {
       i += 1;
       continue;
     }
+    if (arg === "--tournament-contexts-per-candidate" && next) {
+      out.benchmarkOptions.tournament_contexts_per_candidate = Math.round(parseNumber(next, NaN));
+      i += 1;
+      continue;
+    }
     if (arg === "--tournament-train-game-cap" && next) {
       out.benchmarkOptions.tournament_train_game_cap = Math.round(parseNumber(next, NaN));
       i += 1;
@@ -299,6 +352,11 @@ function parseArgs(argv) {
       i += 1;
       continue;
     }
+    if (arg === "--regular-contexts-per-candidate" && next) {
+      out.benchmarkOptions.regular_contexts_per_candidate = Math.round(parseNumber(next, NaN));
+      i += 1;
+      continue;
+    }
     if (arg === "--regular-train-game-cap" && next) {
       out.benchmarkOptions.regular_train_game_cap = Math.round(parseNumber(next, NaN));
       i += 1;
@@ -306,6 +364,35 @@ function parseArgs(argv) {
     }
     if (arg === "--regular-test-game-cap" && next) {
       out.benchmarkOptions.regular_test_game_cap = Math.round(parseNumber(next, NaN));
+      i += 1;
+      continue;
+    }
+    if (arg === "--search-recent-contexts-anchor" && next) {
+      out.benchmarkOptions.search_recent_contexts_anchor = Math.round(parseNumber(next, NaN));
+      i += 1;
+      continue;
+    }
+    if (arg === "--min-eval-rate" && next) {
+      out.benchmarkOptions.min_eval_rate = parseNumber(next, NaN);
+      i += 1;
+      continue;
+    }
+    if (arg === "--no-speed-guard") {
+      out.benchmarkOptions.auto_speed_guard = false;
+      continue;
+    }
+    if (arg === "--speed-guard-grace-evals" && next) {
+      out.benchmarkOptions.speed_guard_grace_evals = Math.round(parseNumber(next, NaN));
+      i += 1;
+      continue;
+    }
+    if (arg === "--speed-guard-cooldown" && next) {
+      out.benchmarkOptions.speed_guard_cooldown = Math.round(parseNumber(next, NaN));
+      i += 1;
+      continue;
+    }
+    if (arg === "--speed-guard-min-contexts" && next) {
+      out.benchmarkOptions.speed_guard_min_contexts = Math.round(parseNumber(next, NaN));
       i += 1;
       continue;
     }
@@ -358,6 +445,36 @@ function parseArgs(argv) {
       i += 1;
       continue;
     }
+    if (arg === "--robust-std-weight" && next) {
+      out.benchmarkOptions.robust_std_weight = parseNumber(next, NaN);
+      i += 1;
+      continue;
+    }
+    if (arg === "--robust-downside-weight" && next) {
+      out.benchmarkOptions.robust_downside_weight = parseNumber(next, NaN);
+      i += 1;
+      continue;
+    }
+    if (arg === "--robust-downside-quantile" && next) {
+      out.benchmarkOptions.robust_downside_quantile = parseNumber(next, NaN);
+      i += 1;
+      continue;
+    }
+    if (arg === "--regular-robust-std-weight" && next) {
+      out.benchmarkOptions.regular_robust_std_weight = parseNumber(next, NaN);
+      i += 1;
+      continue;
+    }
+    if (arg === "--regular-robust-downside-weight" && next) {
+      out.benchmarkOptions.regular_robust_downside_weight = parseNumber(next, NaN);
+      i += 1;
+      continue;
+    }
+    if (arg === "--regular-robust-downside-quantile" && next) {
+      out.benchmarkOptions.regular_robust_downside_quantile = parseNumber(next, NaN);
+      i += 1;
+      continue;
+    }
     if (arg === "--accuracy-priority") {
       out.benchmarkOptions.regular_objective_logloss_weight = 0.35;
       out.benchmarkOptions.regular_objective_brier_weight = 0.15;
@@ -372,6 +489,20 @@ function parseArgs(argv) {
     if (arg === "--regular-weight" && next) {
       out.benchmarkOptions.regular_weight = parseNumber(next, NaN);
       i += 1;
+      continue;
+    }
+    if (arg === "--ensemble-top-k" && next) {
+      out.benchmarkOptions.ensemble_top_k = Math.round(parseNumber(next, NaN));
+      i += 1;
+      continue;
+    }
+    if (arg === "--ensemble-temperature" && next) {
+      out.benchmarkOptions.ensemble_temperature = parseNumber(next, NaN);
+      i += 1;
+      continue;
+    }
+    if (arg === "--no-ensemble") {
+      out.benchmarkOptions.ensemble_top_k = 0;
       continue;
     }
     if (arg === "--random-seed" && next) {
@@ -510,22 +641,45 @@ async function main() {
     stopped_early: result.stopped_early === true,
     base_objective: result.base?.objective ?? null,
     objective: result.best?.objective ?? null,
+    objective_raw: result.best?.objective_raw ?? null,
     objective_gain_vs_base: (Number.isFinite(result.best?.objective) && Number.isFinite(result.base?.objective))
       ? (result.best.objective - result.base.objective)
       : null,
     tournament_objective: result.best?.tournament?.objective ?? null,
+    tournament_downside_quantile: result.best?.tournament?.downside_quantile ?? null,
     regular_objective: result.best?.regular_season?.objective ?? null,
+    regular_objective_raw: result.best?.regular_season?.objective_raw ?? null,
+    regular_objective_stddev: result.best?.regular_season?.objective_stddev ?? null,
+    regular_downside_quantile: result.best?.regular_season?.downside_quantile ?? null,
     avg_tournament_normalized: result.best?.tournament?.avg_normalized ?? null,
     avg_regular_log_loss: result.best?.regular_season?.avg_log_loss ?? null,
     avg_regular_accuracy: result.best?.regular_season?.avg_accuracy ?? null,
+    leave_one_season_out: result.settings?.leave_one_season_out ?? null,
+    strict_no_leakage: result.settings?.strict_no_leakage ?? null,
     fast_models: result.settings?.fast_models ?? null,
     full_rescore_fast_models: result.settings?.full_rescore_fast_models ?? null,
     full_rescore_top_k: result.settings?.full_rescore_top_k ?? null,
+    ensemble_top_k: result.settings?.ensemble_top_k ?? null,
+    ensemble_temperature: result.settings?.ensemble_temperature ?? null,
+    tournament_contexts_total: result.settings?.tournament_contexts_total ?? null,
+    regular_contexts_total: result.settings?.regular_contexts_total ?? null,
+    tournament_contexts_per_candidate: result.settings?.tournament_contexts_per_candidate ?? null,
+    regular_contexts_per_candidate: result.settings?.regular_contexts_per_candidate ?? null,
+    search_recent_contexts_anchor: result.settings?.search_recent_contexts_anchor ?? null,
+    min_eval_rate: result.settings?.min_eval_rate ?? null,
+    auto_speed_guard: result.settings?.auto_speed_guard ?? null,
+    speed_guard_adjustments: result.settings?.speed_guard_adjustments ?? null,
     tournament_context_limit: result.settings?.tournament_context_limit ?? null,
     tournament_train_game_cap: result.settings?.tournament_train_game_cap ?? null,
     regular_context_limit: result.settings?.regular_context_limit ?? null,
     regular_train_game_cap: result.settings?.regular_train_game_cap ?? null,
     regular_test_game_cap: result.settings?.regular_test_game_cap ?? null,
+    robust_std_weight: result.settings?.robust_std_weight ?? null,
+    robust_downside_weight: result.settings?.robust_downside_weight ?? null,
+    robust_downside_quantile: result.settings?.robust_downside_quantile ?? null,
+    regular_robust_std_weight: result.settings?.regular_robust_std_weight ?? null,
+    regular_robust_downside_weight: result.settings?.regular_robust_downside_weight ?? null,
+    regular_robust_downside_quantile: result.settings?.regular_robust_downside_quantile ?? null,
     early_stop_patience: result.settings?.early_stop_patience ?? null,
     early_stop_min_improvement: result.settings?.early_stop_min_improvement ?? null,
     early_stop_min_evaluated: result.settings?.early_stop_min_evaluated ?? null,

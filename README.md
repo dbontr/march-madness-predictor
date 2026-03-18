@@ -122,6 +122,18 @@ node scripts/build_d1_runtime_data.js \
   --market-lines
 ```
 
+Expand the runtime database to a wider range quickly (no market-line enrichment):
+
+```bash
+node scripts/build_d1_runtime_data.js \
+  --target-season 2026 \
+  --from-season 2016 \
+  --to-season 2026 \
+  --no-market-lines \
+  --day-concurrency 12 \
+  --team-stats-concurrency 20
+```
+
 What this script does:
 
 - Pulls all finalized D1 games from ESPN scoreboard day-by-day.
@@ -257,6 +269,26 @@ node scripts/benchmark.js \
   --regular-weight 0.48 \
   --random-seed 20260318 \
   --out data/generated/2026/full_benchmark_long.json \
+  --apply-best
+```
+
+Use broad historical coverage while holding search speed around `>=1.0 candidates/sec`:
+
+```bash
+node scripts/benchmark.js \
+  --season 2026 \
+  --all-years \
+  --min-eval-rate 1 \
+  --tournament-context-limit 0 \
+  --regular-context-limit 0 \
+  --tournament-contexts-per-candidate 2 \
+  --regular-contexts-per-candidate 2 \
+  --tournament-train-game-cap 1200 \
+  --regular-train-game-cap 1200 \
+  --regular-test-game-cap 220 \
+  --fast-models \
+  --full-rescore-top-k 2 \
+  --out data/generated/2026/full_benchmark_all_years.json \
   --apply-best
 ```
 

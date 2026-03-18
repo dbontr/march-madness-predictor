@@ -64,8 +64,12 @@
     blend_style: 0.11,
     blend_archetype: 0.07,
     blend_market: 0.07,
+    blend_latent: 0.04,
     style_scale: 0.9,
     archetype_scale: 0.82,
+    latent_scale: 0.88,
+    latent_dim: 6,
+    latent_reg: 0.028,
     form_scale: 6.2,
     form_trend_scale: 1.65,
     matchup_interaction_scale: 0.62,
@@ -83,8 +87,10 @@
     margin_sigma_base: 7.4,
     variance_scale: 0.78,
     archetype_uncertainty_damp: 0.55,
+    latent_uncertainty_damp: 0.52,
     calibration_isotonic_mix: 0.12,
     uncertainty_confidence_scale: 0.34,
+    calibration_round_min_rows: 24,
     shock_base: 0.08,
     shock_scale: 0.22,
     home_court_bonus: 2.2,
@@ -103,10 +109,14 @@
     "blend_style",
     "blend_archetype",
     "blend_market",
+    "blend_latent",
   ]);
   const TUNING_PARAM_SPECS = Object.freeze({
     style_scale: { min: 0.4, max: 1.6, integer: false },
     archetype_scale: { min: 0.35, max: 1.7, integer: false },
+    latent_scale: { min: 0.25, max: 1.8, integer: false },
+    latent_dim: { min: 2, max: 14, integer: true },
+    latent_reg: { min: 0.005, max: 0.12, integer: false },
     form_scale: { min: 0, max: 14, integer: false },
     form_trend_scale: { min: 0, max: 4.5, integer: false },
     matchup_interaction_scale: { min: 0, max: 3.2, integer: false },
@@ -124,8 +134,10 @@
     margin_sigma_base: { min: 4.8, max: 13, integer: false },
     variance_scale: { min: 0.45, max: 1.3, integer: false },
     archetype_uncertainty_damp: { min: 0, max: 1, integer: false },
+    latent_uncertainty_damp: { min: 0, max: 1, integer: false },
     calibration_isotonic_mix: { min: 0, max: 0.45, integer: false },
     uncertainty_confidence_scale: { min: 0.08, max: 0.75, integer: false },
+    calibration_round_min_rows: { min: 8, max: 120, integer: true },
     shock_base: { min: 0.03, max: 0.25, integer: false },
     shock_scale: { min: 0.05, max: 0.45, integer: false },
     home_court_bonus: { min: 0, max: 6, integer: false },
@@ -1284,6 +1296,29 @@
     return sorted[lo] * (1 - t) + sorted[hi] * t;
   }
 
+  function weightedQuantile(values, weights, quantile = 0.2) {
+    const q = clampNumber(finiteOr(quantile, 0.2), 0, 1);
+    const pairs = [];
+    for (let i = 0; i < (values || []).length; i += 1) {
+      const v = Number(values[i]);
+      const w = Math.max(0, Number(weights?.[i]));
+      if (!isFiniteNumber(v) || !isFiniteNumber(w) || w <= 1e-12) continue;
+      pairs.push({ v, w });
+    }
+    if (!pairs.length) return 0;
+    pairs.sort((a, b) => a.v - b.v);
+    const totalW = pairs.reduce((acc, row) => acc + row.w, 0);
+    const target = q * totalW;
+    let cum = 0;
+    for (const row of pairs) {
+      cum += row.w;
+      if (cum >= target) {
+        return row.v;
+      }
+    }
+    return pairs[pairs.length - 1].v;
+  }
+
   function normalizeBlendWeights(tuning) {
     const weights = {};
     let total = 0;
@@ -2099,6 +2134,140 @@
     };
   }
 
+  function hashStringSeed(text) {
+    let hash = 2166136261;
+    const input = String(text || "");
+    for (let i = 0; i < input.length; i += 1) {
+      hash ^= input.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function fitLatentMatchupModel(validGames, ratingByTeam, baseRating, baseMean, gamesPlayedByTeam, tuning = DEFAULT_TUNING) {
+    if (!validGames?.length) {
+      return {
+        offenseBySeasonTeam: new Map(),
+        defenseBySeasonTeam: new Map(),
+        reliabilityBySeasonTeam: new Map(),
+        teams: 0,
+        dim: 0,
+        rows: 0,
+      };
+    }
+
+    const latentDim = Math.round(clampNumber(finiteOr(tuning?.latent_dim, DEFAULT_TUNING.latent_dim), 2, 14));
+    const epochs = Math.round(80 + 8 * latentDim);
+    const lrBase = 0.028;
+    const reg = clampNumber(finiteOr(tuning?.latent_reg, DEFAULT_TUNING.latent_reg), 0.005, 0.12);
+
+    const keySet = new Set();
+    validGames.forEach((game) => {
+      keySet.add(game.keyA);
+      keySet.add(game.keyB);
+    });
+    const keys = [...keySet];
+    if (!keys.length) {
+      return {
+        offenseBySeasonTeam: new Map(),
+        defenseBySeasonTeam: new Map(),
+        reliabilityBySeasonTeam: new Map(),
+        teams: 0,
+        dim: 0,
+        rows: validGames.length,
+      };
+    }
+
+    const indexByKey = new Map();
+    keys.forEach((key, idx) => indexByKey.set(key, idx));
+
+    const offense = keys.map((key) => {
+      const arr = new Float64Array(latentDim);
+      let seed = hashStringSeed(`off:${key}`);
+      for (let d = 0; d < latentDim; d += 1) {
+        seed = Math.imul(seed ^ (seed >>> 15), 0x85ebca6b) >>> 0;
+        arr[d] = (((seed / 4294967296) - 0.5) * 0.08);
+      }
+      return arr;
+    });
+
+    const defense = keys.map((key) => {
+      const arr = new Float64Array(latentDim);
+      let seed = hashStringSeed(`def:${key}`);
+      for (let d = 0; d < latentDim; d += 1) {
+        seed = Math.imul(seed ^ (seed >>> 13), 0xc2b2ae35) >>> 0;
+        arr[d] = (((seed / 4294967296) - 0.5) * 0.08);
+      }
+      return arr;
+    });
+
+    for (let epoch = 0; epoch < epochs; epoch += 1) {
+      const lr = lrBase / (1 + epoch * 0.03);
+      for (const game of validGames) {
+        const idxA = indexByKey.get(game.keyA);
+        const idxB = indexByKey.get(game.keyB);
+        if (idxA === undefined || idxB === undefined) continue;
+
+        const ratingA = ratingByTeam.get(game.keyA) ?? baseRating.get(game.keyA) ?? baseMean;
+        const ratingB = ratingByTeam.get(game.keyB) ?? baseRating.get(game.keyB) ?? baseMean;
+        const expected = sigmoid((ratingA - ratingB) / 11.5);
+        const residual = finiteOr(game.outcomeSoft, 0.5) - expected;
+        const w = clampNumber(finiteOr(game.weight, 1), 0.2, 2.8);
+
+        const offA = offense[idxA];
+        const defA = defense[idxA];
+        const offB = offense[idxB];
+        const defB = defense[idxB];
+        const pred = dot(offA, defB) - dot(offB, defA);
+        const err = pred - residual;
+
+        for (let d = 0; d < latentDim; d += 1) {
+          const oA = offA[d];
+          const dA = defA[d];
+          const oB = offB[d];
+          const dB = defB[d];
+
+          const gradOA = err * dB + reg * oA;
+          const gradDB = err * oA + reg * dB;
+          const gradOB = -err * dA + reg * oB;
+          const gradDA = -err * oB + reg * dA;
+
+          offA[d] = oA - lr * w * gradOA;
+          defB[d] = dB - lr * w * gradDB;
+          offB[d] = oB - lr * w * gradOB;
+          defA[d] = dA - lr * w * gradDA;
+        }
+      }
+    }
+
+    const offenseBySeasonTeam = new Map();
+    const defenseBySeasonTeam = new Map();
+    keys.forEach((key, idx) => {
+      offenseBySeasonTeam.set(key, offense[idx]);
+      defenseBySeasonTeam.set(key, defense[idx]);
+    });
+
+    const exposureByTeam = new Map();
+    for (const game of validGames) {
+      exposureByTeam.set(game.keyA, (exposureByTeam.get(game.keyA) || 0) + 1);
+      exposureByTeam.set(game.keyB, (exposureByTeam.get(game.keyB) || 0) + 1);
+    }
+    const reliabilityBySeasonTeam = new Map();
+    keys.forEach((key) => {
+      const played = finiteOr(gamesPlayedByTeam?.get(key), exposureByTeam.get(key) || 0);
+      reliabilityBySeasonTeam.set(key, clampNumber(played / (played + 12), 0.08, 1));
+    });
+
+    return {
+      offenseBySeasonTeam,
+      defenseBySeasonTeam,
+      reliabilityBySeasonTeam,
+      teams: keys.length,
+      dim: latentDim,
+      rows: validGames.length,
+    };
+  }
+
   function styleEdgeFromContext(performanceStyle, keyA, keyB) {
     const vecA = performanceStyle?.styleVectorBySeasonTeam?.get(keyA);
     const vecB = performanceStyle?.styleVectorBySeasonTeam?.get(keyB);
@@ -2126,6 +2295,27 @@
     const uncertaintyB = finiteOr(performanceStyle?.uncertaintyBySeasonTeam?.get(keyB), 0.55);
     const uncertaintyDamp = 1 - finiteOr(performanceStyle?.tuning?.archetype_uncertainty_damp, 0.55) * ((uncertaintyA + uncertaintyB) / 2);
     return clampNumber(edge * reliability * clampNumber(uncertaintyDamp, 0.25, 1), -0.3, 0.3);
+  }
+
+  function latentEdgeFromContext(performanceStyle, keyA, keyB) {
+    const latentModel = performanceStyle?.latentModel;
+    const offA = latentModel?.offenseBySeasonTeam?.get(keyA);
+    const defA = latentModel?.defenseBySeasonTeam?.get(keyA);
+    const offB = latentModel?.offenseBySeasonTeam?.get(keyB);
+    const defB = latentModel?.defenseBySeasonTeam?.get(keyB);
+    if (!offA || !defA || !offB || !defB) {
+      return 0;
+    }
+
+    const raw = dot(offA, defB) - dot(offB, defA);
+    const relA = clampNumber(finiteOr(latentModel?.reliabilityBySeasonTeam?.get(keyA), 0.22), 0.08, 1);
+    const relB = clampNumber(finiteOr(latentModel?.reliabilityBySeasonTeam?.get(keyB), 0.22), 0.08, 1);
+    const reliability = Math.sqrt(relA * relB);
+    const uncertaintyA = finiteOr(performanceStyle?.uncertaintyBySeasonTeam?.get(keyA), 0.55);
+    const uncertaintyB = finiteOr(performanceStyle?.uncertaintyBySeasonTeam?.get(keyB), 0.55);
+    const uncertaintyDamp = 1 - finiteOr(performanceStyle?.tuning?.latent_uncertainty_damp, 0.52) * ((uncertaintyA + uncertaintyB) / 2);
+    const scaled = Math.tanh(raw * 2.2) * 0.24;
+    return clampNumber(scaled * reliability * clampNumber(uncertaintyDamp, 0.25, 1), -0.32, 0.32);
   }
 
   function computeQualityProfileByTeam(gamesByTeam, ratingByTeam, baseRating, baseMean) {
@@ -2709,6 +2899,14 @@
 
     const styleModel = fitStyleInteractionModel(validGames, styleVectorByTeam, rating, baseRating, baseMean);
     const archetypeModel = fitArchetypeMatchupModel(validGames, archetypeByTeam, rating, baseRating, baseMean);
+    const latentModel = fitLatentMatchupModel(
+      validGames,
+      rating,
+      baseRating,
+      baseMean,
+      offDef.gamesPlayedBySeasonTeam,
+      tuning,
+    );
     const qualityByTeam = computeQualityProfileByTeam(gamesByTeam, rating, baseRating, baseMean);
 
     return {
@@ -2728,6 +2926,7 @@
       market_rows: marketModel.market_rows,
       styleModel,
       archetypeModel,
+      latentModel,
       gamesPlayedBySeasonTeam: offDef.gamesPlayedBySeasonTeam,
       preseasonBySeasonTeam: offDef.preseasonBySeasonTeam,
     };
@@ -2848,6 +3047,8 @@
     const styleProb = clampProb(0.5 + tuning.style_scale * styleEdge);
     const archetypeEdge = archetypeEdgeFromContext(performanceStyle, keyA, keyB);
     const archetypeProb = clampProb(0.5 + tuning.archetype_scale * archetypeEdge);
+    const latentEdge = latentEdgeFromContext(performanceStyle, keyA, keyB);
+    const latentProb = clampProb(0.5 + tuning.latent_scale * latentEdge);
 
     const marketPowerA = finiteOr(performanceStyle?.marketPowerBySeasonTeam?.get(keyA), 0);
     const marketPowerB = finiteOr(performanceStyle?.marketPowerBySeasonTeam?.get(keyB), 0);
@@ -2871,7 +3072,8 @@
       tuning.blend_rating * performanceProb +
       tuning.blend_style * styleProb +
       tuning.blend_archetype * archetypeProb +
-      tuning.blend_market * marketProb,
+      tuning.blend_market * marketProb +
+      tuning.blend_latent * latentProb,
     );
 
     const stacker = performanceStyle?.stacker;
@@ -3119,6 +3321,7 @@
     const rows = [];
     const earlyRows = [];
     const lateRows = [];
+    const byRoundRows = {};
     for (const game of games) {
       const keyA = teamSeasonKey(game.season, game.team_a);
       const keyB = teamSeasonKey(game.season, game.team_b);
@@ -3145,6 +3348,14 @@
       );
       const item = { baseProb, target, weight };
       rows.push(item);
+      const roundOrder = ncaaRoundOrderFromRoundName(game?.round_name);
+      if (isFiniteNumber(roundOrder) && roundOrder >= 1 && roundOrder <= 6) {
+        const roundKey = String(Math.round(roundOrder));
+        if (!Array.isArray(byRoundRows[roundKey])) {
+          byRoundRows[roundKey] = [];
+        }
+        byRoundRows[roundKey].push(item);
+      }
       const difficulty = 1 - Math.abs(baseProb - 0.5) * 2;
       if (difficulty >= 0.42) {
         lateRows.push(item);
@@ -3158,14 +3369,23 @@
         global: { alpha: 1, beta: 0, rows: 0 },
         early: { alpha: 1, beta: 0, rows: 0 },
         late: { alpha: 1, beta: 0, rows: 0 },
+        by_round: {},
       };
     }
 
     const tuning = performanceStyle?.tuning || DEFAULT_TUNING;
+    const byRound = {};
+    for (let round = 1; round <= 6; round += 1) {
+      const key = String(round);
+      const sourceRows = byRoundRows[key] || [];
+      if (!sourceRows.length) continue;
+      byRound[key] = fitCalibratorRows(sourceRows, tuning);
+    }
     return {
       global: fitCalibratorRows(rows, tuning),
       early: fitCalibratorRows(earlyRows.length ? earlyRows : rows, tuning),
       late: fitCalibratorRows(lateRows.length ? lateRows : rows, tuning),
+      by_round: byRound,
     };
   }
 
@@ -3175,6 +3395,19 @@
     }
     const early = calibration.early || calibration.global;
     const late = calibration.late || calibration.global;
+    const roundKey = String(Math.round(clampNumber(finiteOr(roundOrder, 1), 1, 6)));
+    const roundSpecific = calibration.by_round?.[roundKey];
+    const minRoundRows = Math.round(clampNumber(
+      finiteOr(tuning.calibration_round_min_rows, DEFAULT_TUNING.calibration_round_min_rows),
+      8,
+      120,
+    ));
+    if (roundSpecific && Number(roundSpecific.rows || 0) >= minRoundRows) {
+      return {
+        ...roundSpecific,
+        iso_mix: clampNumber(finiteOr(roundSpecific.iso_mix, 0), 0, 0.45),
+      };
+    }
     const difficulty = 1 - Math.abs(baseProb - 0.5) * 2;
 
     if (roundOrder >= 5) return { ...late, iso_mix: clampNumber(finiteOr(late.iso_mix, 0), 0, 0.45) };
@@ -3774,10 +4007,48 @@
     return !isNcaaTournamentRoundName(game?.round_name);
   }
 
-  function buildTrainingSplitForHoldout(teamStats, historical, holdoutSeason, firstFourStart) {
+  function gameChronoValue(game) {
+    const date = normalizeMaybeYmd(game?.game_date);
+    if (date) {
+      try {
+        return ymdToDate(date).getTime();
+      } catch {
+        // fall through
+      }
+    }
+    const idx = toNumber(game?.game_index);
+    if (isFiniteNumber(idx)) return idx;
+    return Number.NaN;
+  }
+
+  function hasChronoLeakage(trainGames, testGames) {
+    const trainVals = (trainGames || [])
+      .map((game) => gameChronoValue(game))
+      .filter((value) => isFiniteNumber(value));
+    const testVals = (testGames || [])
+      .map((game) => gameChronoValue(game))
+      .filter((value) => isFiniteNumber(value));
+    if (!trainVals.length || !testVals.length) {
+      return false;
+    }
+    const trainMax = Math.max(...trainVals);
+    const testMin = Math.min(...testVals);
+    return trainMax >= testMin;
+  }
+
+  function buildTrainingSplitForHoldout(teamStats, historical, holdoutSeason, firstFourStart, options = {}) {
+    const strictNoLeakage = options.strict_no_leakage !== false;
     return {
-      trainStats: teamStats.filter((row) => Number(row.season) <= holdoutSeason),
-      trainGames: historical.filter((row) => isPreTournamentHoldoutGame(row, holdoutSeason, firstFourStart)),
+      trainStats: teamStats.filter((row) => (
+        strictNoLeakage
+          ? Number(row.season) < holdoutSeason
+          : Number(row.season) <= holdoutSeason
+      )),
+      trainGames: historical.filter((row) => {
+        if (!isPreTournamentHoldoutGame(row, holdoutSeason, firstFourStart)) return false;
+        if (strictNoLeakage && Number(row?.season) >= holdoutSeason) return false;
+        return true;
+      }),
     };
   }
 
@@ -3880,6 +4151,7 @@
         historical || [],
         season,
         window.first_four_start,
+        options,
       );
       const trainGames = trainGameCap > 0 ? capRowsEvenly(split.trainGames, trainGameCap) : split.trainGames;
       const seasonTournamentGames = capRowsEvenly(
@@ -3980,7 +4252,8 @@
     const d = 0.05 + rng.next();
     const e = 0.05 + rng.next();
     const f = 0.05 + rng.next();
-    const total = a + b + c + d + e + f;
+    const g = 0.05 + rng.next();
+    const total = a + b + c + d + e + f + g;
     return normalizeTuningParams({
       ...base,
       blend_logistic: a / total,
@@ -3989,8 +4262,12 @@
       blend_style: d / total,
       blend_archetype: e / total,
       blend_market: f / total,
+      blend_latent: g / total,
       style_scale: 0.55 + 0.95 * rng.next(),
       archetype_scale: 0.4 + 1.25 * rng.next(),
+      latent_scale: 0.3 + 1.3 * rng.next(),
+      latent_dim: 2 + 12 * rng.next(),
+      latent_reg: 0.008 + 0.105 * rng.next(),
       form_scale: 2 + 10 * rng.next(),
       form_trend_scale: 0.2 + 3.8 * rng.next(),
       matchup_interaction_scale: 0.2 + 2.8 * rng.next(),
@@ -4008,6 +4285,8 @@
       margin_sigma_base: 5.4 + 6.4 * rng.next(),
       variance_scale: 0.52 + 0.56 * rng.next(),
       archetype_uncertainty_damp: 0.15 + 0.75 * rng.next(),
+      latent_uncertainty_damp: 0.1 + 0.8 * rng.next(),
+      calibration_round_min_rows: 10 + 80 * rng.next(),
       calibration_isotonic_mix: 0.02 + 0.26 * rng.next(),
       uncertainty_confidence_scale: 0.16 + 0.5 * rng.next(),
       shock_base: 0.05 + 0.14 * rng.next(),
@@ -4112,6 +4391,9 @@
     const recencyDecay = clampNumber(finiteOr(tuningCfg.season_recency_decay, 0.35), 0, 1.5);
     const probWeight = clampNumber(finiteOr(tuningCfg.objective_actual_prob_weight, 0.18), 0, 1);
     const stabilityPenalty = clampNumber(finiteOr(tuningCfg.objective_stability_penalty, 0.08), 0, 1);
+    const robustStdWeight = clampNumber(finiteOr(tuningCfg.robust_std_weight, stabilityPenalty), 0, 1.5);
+    const robustDownsideWeight = clampNumber(finiteOr(tuningCfg.robust_downside_weight, 0.1), 0, 1.5);
+    const robustDownsideQuantile = clampNumber(finiteOr(tuningCfg.robust_downside_quantile, 0.2), 0.01, 0.5);
     const fastModels = tuningCfg.fast_models === true;
     const trainGameCap = Math.round(clampNumber(finiteOr(tuningCfg.tournament_train_game_cap, 0), 0, 50000));
     const modelParams = benchmarkModelParams(params, fastModels);
@@ -4133,6 +4415,7 @@
             historical,
             context.season,
             context.first_four_start,
+            tuningCfg,
           );
       const trainStats = Array.isArray(context?.trainStats) ? context.trainStats : split?.trainStats || [];
       let trainGames = Array.isArray(context?.trainGames) ? context.trainGames : split?.trainGames || [];
@@ -4226,12 +4509,26 @@
       return acc + row.weight * delta * delta;
     }, 0) / weightTotal;
     const normalizedStd = Math.sqrt(Math.max(0, weightedNormVariance));
+    const downsideQuantile = weightedQuantile(
+      perSeason.map((row) => row.normalized),
+      perSeason.map((row) => row.weight),
+      robustDownsideQuantile,
+    );
+    const robustObjective =
+      avgNorm +
+      probWeight * avgActualProb -
+      robustStdWeight * normalizedStd +
+      robustDownsideWeight * downsideQuantile;
     return {
-      objective: avgNorm + probWeight * avgActualProb - stabilityPenalty * normalizedStd,
+      objective: robustObjective,
       avg_points: avgPoints,
       avg_normalized: avgNorm,
       avg_actual_winner_prob: avgActualProb,
       normalized_stddev: normalizedStd,
+      downside_quantile: downsideQuantile,
+      downside_quantile_level: robustDownsideQuantile,
+      robust_std_weight: robustStdWeight,
+      robust_downside_weight: robustDownsideWeight,
       seasons_scored: scored,
       per_season: perSeason.sort((a, b) => a.season - b.season),
     };
@@ -4524,6 +4821,40 @@
     return out;
   }
 
+  function buildTopKEnsembleParams(rows, topK = 4, temperature = 0.02) {
+    const k = Math.max(2, Math.round(finiteOr(topK, 4)));
+    const temp = clampNumber(finiteOr(temperature, 0.02), 0.0005, 0.5);
+    const shortlist = (rows || [])
+      .filter((row) => row && row.params && isFiniteNumber(row.objective))
+      .sort((a, b) => b.objective - a.objective)
+      .slice(0, k);
+    if (shortlist.length < 2) {
+      return null;
+    }
+    const bestObjective = finiteOr(shortlist[0]?.objective, 0);
+    const scoredWeights = shortlist.map((row) => {
+      const delta = finiteOr(row.objective, bestObjective) - bestObjective;
+      const weight = Math.exp(clampNumber(delta / temp, -60, 12));
+      return Number.isFinite(weight) && weight > 0 ? weight : 0;
+    });
+    let totalWeight = scoredWeights.reduce((acc, value) => acc + value, 0);
+    if (!isFiniteNumber(totalWeight) || totalWeight <= 1e-12) {
+      totalWeight = shortlist.length;
+      for (let i = 0; i < scoredWeights.length; i += 1) {
+        scoredWeights[i] = 1;
+      }
+    }
+    const out = {};
+    for (const key of ALL_TUNING_KEYS) {
+      let weighted = 0;
+      for (let i = 0; i < shortlist.length; i += 1) {
+        weighted += scoredWeights[i] * finiteOr(shortlist[i]?.params?.[key], DEFAULT_TUNING[key]);
+      }
+      out[key] = weighted / totalWeight;
+    }
+    return normalizeTuningParams(out);
+  }
+
   function regularSeasonObjective(logLoss, brierScore, accuracy, benchCfg = {}) {
     const wLog = Math.max(0, finiteOr(benchCfg.regular_objective_logloss_weight, 0.55));
     const wBrier = Math.max(0, finiteOr(benchCfg.regular_objective_brier_weight, 0.25));
@@ -4603,6 +4934,7 @@
     const minTestGames = Math.round(clampNumber(finiteOr(benchCfg.regular_min_test_games, 30), 10, 1000));
     const recencyDecay = clampNumber(finiteOr(benchCfg.regular_recency_decay, 0.25), 0, 1.5);
     const withinSeasonWeight = clampNumber(finiteOr(benchCfg.within_season_weight, 0.75), 0.1, 2);
+    const strictNoLeakage = benchCfg.strict_no_leakage !== false;
     const includePostseason = benchCfg.include_postseason !== false;
     const filteredHistorical = includePostseason
       ? historical
@@ -4686,6 +5018,9 @@
       trainGames: trainGameCap > 0 ? capRowsEvenly(context.trainGames, trainGameCap) : context.trainGames,
       testGames: testGameCap > 0 ? capRowsEvenly(context.testGames, testGameCap) : context.testGames,
     }));
+    if (strictNoLeakage) {
+      contexts = contexts.filter((context) => !hasChronoLeakage(context.trainGames, context.testGames));
+    }
     return contexts;
   }
 
@@ -4764,22 +5099,63 @@
     if (weightTotal <= 1e-9) {
       return {
         objective: Number.NEGATIVE_INFINITY,
+        objective_raw: Number.NEGATIVE_INFINITY,
         contexts_scored: 0,
         games_scored: 0,
         avg_log_loss: null,
         avg_brier_score: null,
         avg_accuracy: null,
+        objective_stddev: null,
+        downside_quantile: null,
+        downside_quantile_level: null,
+        regular_robust_std_weight: null,
+        regular_robust_downside_weight: null,
         by_context: [],
       };
     }
 
+    const objectiveRaw = weightedObjective / weightTotal;
+    const weightedObjectiveVariance = byContext.reduce((acc, row) => {
+      const delta = row.objective - objectiveRaw;
+      return acc + row.weight * delta * delta;
+    }, 0) / weightTotal;
+    const objectiveStddev = Math.sqrt(Math.max(0, weightedObjectiveVariance));
+    const stabilityFallback = clampNumber(finiteOr(benchCfg.objective_stability_penalty, 0.08), 0, 1.5);
+    const robustStdWeight = clampNumber(
+      finiteOr(benchCfg.regular_robust_std_weight, finiteOr(benchCfg.robust_std_weight, stabilityFallback)),
+      0,
+      1.5,
+    );
+    const robustDownsideWeight = clampNumber(
+      finiteOr(benchCfg.regular_robust_downside_weight, finiteOr(benchCfg.robust_downside_weight, 0.08)),
+      0,
+      1.5,
+    );
+    const robustDownsideQuantile = clampNumber(
+      finiteOr(benchCfg.regular_robust_downside_quantile, finiteOr(benchCfg.robust_downside_quantile, 0.2)),
+      0.01,
+      0.5,
+    );
+    const downsideQuantile = weightedQuantile(
+      byContext.map((row) => row.objective),
+      byContext.map((row) => row.weight),
+      robustDownsideQuantile,
+    );
+    const robustObjective = objectiveRaw - robustStdWeight * objectiveStddev + robustDownsideWeight * downsideQuantile;
+
     return {
-      objective: weightedObjective / weightTotal,
+      objective: robustObjective,
+      objective_raw: objectiveRaw,
       contexts_scored: byContext.length,
       games_scored: gamesTotal,
       avg_log_loss: weightedLogLoss / weightTotal,
       avg_brier_score: weightedBrier / weightTotal,
       avg_accuracy: weightedAccuracy / weightTotal,
+      objective_stddev: objectiveStddev,
+      downside_quantile: downsideQuantile,
+      downside_quantile_level: robustDownsideQuantile,
+      regular_robust_std_weight: robustStdWeight,
+      regular_robust_downside_weight: robustDownsideWeight,
       by_context: byContext,
     };
   }
@@ -4807,6 +5183,50 @@
     };
   }
 
+  function selectRotatingContexts(contexts, perCandidate, candidateIndex = 0, recentAnchor = 1) {
+    if (!Array.isArray(contexts) || !contexts.length) return [];
+    const total = contexts.length;
+    const take = Math.round(clampNumber(
+      finiteOr(perCandidate, total),
+      1,
+      total,
+    ));
+    if (take >= total) return contexts;
+    const anchorCount = Math.round(clampNumber(
+      finiteOr(recentAnchor, 1),
+      0,
+      Math.min(total, take),
+    ));
+    const rankedIdx = contexts
+      .map((ctx, idx) => ({ idx, season: Number(ctx?.season || 0) }))
+      .sort((a, b) => {
+        if (b.season !== a.season) return b.season - a.season;
+        return a.idx - b.idx;
+      })
+      .map((row) => row.idx);
+    const chosen = [];
+    const used = new Set();
+    for (let i = 0; i < anchorCount; i += 1) {
+      const idx = rankedIdx[i];
+      if (idx === undefined || used.has(idx)) continue;
+      chosen.push(contexts[idx]);
+      used.add(idx);
+    }
+    const needed = take - chosen.length;
+    if (needed <= 0) return chosen;
+    const pool = rankedIdx.filter((idx) => !used.has(idx));
+    if (!pool.length) return chosen;
+    const offsetBase = Math.max(0, Math.round(finiteOr(candidateIndex, 0)));
+    const start = offsetBase % pool.length;
+    for (let i = 0; i < pool.length && chosen.length < take; i += 1) {
+      const idx = pool[(start + i) % pool.length];
+      if (used.has(idx)) continue;
+      chosen.push(contexts[idx]);
+      used.add(idx);
+    }
+    return chosen;
+  }
+
   async function runBenchmark(options = {}) {
     const config = await fetchJson("./data/runtime/config.json").catch(() => ({}));
     const season = Number(options.season || config.default_season || new Date().getUTCFullYear());
@@ -4826,14 +5246,19 @@
     const allPriorSeasons = [...new Set(adjustedTeamStats.map((row) => Number(row.season)))]
       .filter((s) => s < season)
       .sort((a, b) => a - b);
+    const leaveOneSeasonOut = benchmarkCfg.leave_one_season_out !== false;
+    const tournamentLoso = leaveOneSeasonOut && benchmarkCfg.tournament_loso !== false;
+    const regularLoso = leaveOneSeasonOut && benchmarkCfg.regular_loso !== false;
     const holdoutMaxSeasons = resolveSeasonSpan(
       benchmarkCfg.holdout_max_seasons,
-      tuningCfg.holdout_max_seasons ?? allPriorSeasons.length,
+      tournamentLoso ? allPriorSeasons.length : (tuningCfg.holdout_max_seasons ?? allPriorSeasons.length),
       allPriorSeasons.length,
     );
     const regularMaxSeasons = resolveSeasonSpan(
       benchmarkCfg.regular_max_seasons,
-      holdoutMaxSeasons || allPriorSeasons.length,
+      regularLoso
+        ? allPriorSeasons.length
+        : (tuningCfg.regular_max_seasons ?? (holdoutMaxSeasons || allPriorSeasons.length)),
       allPriorSeasons.length,
     );
     const searchFastModels = benchmarkCfg.fast_models !== false;
@@ -4842,6 +5267,13 @@
       0,
       120,
     ));
+    const ensembleTopK = Math.round(clampNumber(
+      finiteOr(benchmarkCfg.ensemble_top_k, 4),
+      0,
+      40,
+    ));
+    const ensembleTemperature = clampNumber(finiteOr(benchmarkCfg.ensemble_temperature, 0.02), 0.0005, 0.5);
+    const ensembleEnabled = ensembleTopK >= 2;
     const fullRescoreFastModels = benchmarkCfg.full_rescore_fast_models !== false;
     const evalCfg = {
       ...benchmarkCfg,
@@ -4901,7 +5333,8 @@
       + (refineRounds * refineTopK * refinePerTop)
       + (crossoverRounds * crossoverChildren)
       + (cemRounds * cemSamples)
-      + localSearchMaxCandidates;
+      + localSearchMaxCandidates
+      + (ensembleEnabled ? 1 : 0);
     const earlyStopMinEvaluated = Math.round(clampNumber(
       finiteOr(benchmarkCfg.early_stop_min_evaluated, Math.ceil(totalEstimated * earlyStopMinFraction)),
       0,
@@ -4942,6 +5375,11 @@
       cem_samples: cemSamples,
       local_search_passes: localSearchPasses,
       local_search_max_candidates: localSearchMaxCandidates,
+      leave_one_season_out: leaveOneSeasonOut,
+      tournament_loso: tournamentLoso,
+      regular_loso: regularLoso,
+      ensemble_top_k: ensembleTopK,
+      ensemble_temperature: ensembleTemperature,
       early_stop_min_evaluated: earlyStopMinEvaluated,
     });
 
@@ -4988,6 +5426,55 @@
     const searchRegularEvalCfg = includeRegular
       ? { ...evalCfg, regular_contexts: regularContexts }
       : evalCfg;
+    const searchRecentContextsAnchor = Math.round(clampNumber(
+      finiteOr(benchmarkCfg.search_recent_contexts_anchor, 1),
+      0,
+      6,
+    ));
+    const defaultTournamentContextsPerCandidate = includeTournament
+      ? Math.max(1, Math.min(tournamentContexts.length, Math.round(Math.max(1, tournamentContexts.length * 0.65))))
+      : 0;
+    const defaultRegularContextsPerCandidate = includeRegular
+      ? Math.max(1, Math.min(regularContexts.length, Math.round(Math.max(1, regularContexts.length * 0.55))))
+      : 0;
+    let tournamentContextsPerCandidate = 0;
+    if (includeTournament) {
+      const raw = Math.round(clampNumber(
+        finiteOr(benchmarkCfg.tournament_contexts_per_candidate, defaultTournamentContextsPerCandidate),
+        0,
+        Math.max(1, tournamentContexts.length),
+      ));
+      tournamentContextsPerCandidate = raw > 0 ? raw : tournamentContexts.length;
+    }
+    let regularContextsPerCandidate = 0;
+    if (includeRegular) {
+      const raw = Math.round(clampNumber(
+        finiteOr(benchmarkCfg.regular_contexts_per_candidate, defaultRegularContextsPerCandidate),
+        0,
+        Math.max(1, regularContexts.length),
+      ));
+      regularContextsPerCandidate = raw > 0 ? raw : regularContexts.length;
+    }
+    const minEvalRate = clampNumber(finiteOr(benchmarkCfg.min_eval_rate, 1), 0, 25);
+    const speedGuardEnabled = minEvalRate > 0 && benchmarkCfg.auto_speed_guard !== false;
+    const speedGuardGraceEvals = Math.round(clampNumber(finiteOr(benchmarkCfg.speed_guard_grace_evals, 36), 0, 20000));
+    const speedGuardCooldown = Math.round(clampNumber(finiteOr(benchmarkCfg.speed_guard_cooldown, 24), 1, 10000));
+    const speedGuardMinContexts = Math.round(clampNumber(finiteOr(benchmarkCfg.speed_guard_min_contexts, 1), 1, 24));
+    let speedGuardAdjustments = 0;
+    let speedGuardLastAdjustAt = 0;
+    emitProgress("search_config", true, {
+      tournament_contexts_total: tournamentContexts.length,
+      regular_contexts_total: regularContexts.length,
+      tournament_contexts_per_candidate: tournamentContextsPerCandidate,
+      regular_contexts_per_candidate: regularContextsPerCandidate,
+      search_recent_contexts_anchor: searchRecentContextsAnchor,
+      min_eval_rate: minEvalRate,
+      auto_speed_guard: speedGuardEnabled,
+    });
+    let finalTournamentContexts = tournamentContexts;
+    let finalRegularContexts = regularContexts;
+    let finalTournamentEvalCfg = tournamentEvalCfg;
+    let finalRegularEvalCfg = searchRegularEvalCfg;
 
     const scored = [];
     const seen = new Set();
@@ -5022,6 +5509,38 @@
       return (evaluatedCount - lastImprovementAt) >= earlyStopPatience;
     }
 
+    function maybeAdjustSearchSpeed() {
+      if (!speedGuardEnabled) return;
+      if (evaluatedCount < speedGuardGraceEvals) return;
+      if ((evaluatedCount - speedGuardLastAdjustAt) < speedGuardCooldown) return;
+      const elapsedSec = Math.max(1e-6, (Date.now() - startedAt) / 1000);
+      const currentRate = evaluatedCount / elapsedSec;
+      if (currentRate >= minEvalRate) return;
+      let changed = false;
+      if (includeRegular && regularContextsPerCandidate > Math.min(speedGuardMinContexts, regularContexts.length)) {
+        regularContextsPerCandidate -= 1;
+        changed = true;
+      } else if (
+        includeTournament &&
+        tournamentContextsPerCandidate > Math.min(speedGuardMinContexts, tournamentContexts.length)
+      ) {
+        tournamentContextsPerCandidate -= 1;
+        changed = true;
+      }
+      speedGuardLastAdjustAt = evaluatedCount;
+      if (!changed) {
+        return;
+      }
+      speedGuardAdjustments += 1;
+      emitProgress("speed_guard_adjust", true, {
+        current_rate: currentRate,
+        min_eval_rate: minEvalRate,
+        tournament_contexts_per_candidate: tournamentContextsPerCandidate,
+        regular_contexts_per_candidate: regularContextsPerCandidate,
+        speed_guard_adjustments: speedGuardAdjustments,
+      });
+    }
+
     function scoreCandidate(rawParams, sourceLabel) {
       const params = normalizeTuningParams(rawParams || {});
       const key = JSON.stringify(params);
@@ -5029,10 +5548,27 @@
         return false;
       }
       seen.add(key);
+      const candidateIndex = scored.length;
+      const tournamentContextsForCandidate = includeTournament
+        ? selectRotatingContexts(
+            tournamentContexts,
+            tournamentContextsPerCandidate,
+            candidateIndex,
+            searchRecentContextsAnchor,
+          )
+        : [];
+      const regularContextsForCandidate = includeRegular
+        ? selectRotatingContexts(
+            regularContexts,
+            regularContextsPerCandidate,
+            candidateIndex * 3 + 1,
+            searchRecentContextsAnchor,
+          )
+        : [];
       const tournamentScore = includeTournament
         ? evaluateTuningCandidate(
             params,
-            tournamentContexts,
+            tournamentContextsForCandidate,
             adjustedTeamStats,
             historical,
             season,
@@ -5040,16 +5576,25 @@
           )
         : null;
       const regularScore = includeRegular
-        ? evaluateRegularSeasonCandidate(params, adjustedTeamStats, historical, season, searchRegularEvalCfg)
+        ? evaluateRegularSeasonCandidate(
+            params,
+            adjustedTeamStats,
+            historical,
+            season,
+            { ...searchRegularEvalCfg, regular_contexts: regularContextsForCandidate },
+          )
         : null;
       const combined = benchmarkCombinedObjective(tournamentScore, regularScore, benchmarkCfg);
       scored.push({
         index: scored.length,
         source: sourceLabel,
         objective: combined.objective,
+        objective_raw: combined.objective,
         objective_weights: combined.weights,
         tournament: tournamentScore,
         regular_season: regularScore,
+        search_tournament_contexts_used: tournamentContextsForCandidate.length,
+        search_regular_contexts_used: regularContextsForCandidate.length,
         params,
       });
       if (combined.objective > bestObjectiveSoFar + earlyStopMinImprovement) {
@@ -5057,9 +5602,12 @@
         lastImprovementAt = evaluatedCount + 1;
       }
       evaluatedCount += 1;
+      maybeAdjustSearchSpeed();
       emitProgress("search", false, {
         last_source: sourceLabel,
         best_objective: bestObjectiveSoFar,
+        tournament_contexts_per_candidate: tournamentContextsPerCandidate,
+        regular_contexts_per_candidate: regularContextsPerCandidate,
       });
       return true;
     }
@@ -5449,6 +5997,10 @@
       const fullRegularEvalCfg = includeRegular
         ? { ...fullEvalCfg, regular_contexts: fullRegularContexts }
         : fullEvalCfg;
+      finalTournamentContexts = fullTournamentContexts;
+      finalRegularContexts = fullRegularContexts;
+      finalTournamentEvalCfg = fullTournamentCfg;
+      finalRegularEvalCfg = fullRegularEvalCfg;
       scored.sort((a, b) => b.objective - a.objective);
       const shortlist = scored.slice(0, rescoreCount);
       emitProgress("full_rescore_start", true, {
@@ -5477,6 +6029,7 @@
           : null;
         const combined = benchmarkCombinedObjective(tournamentScore, regularScore, benchmarkCfg);
         row.objective = combined.objective;
+        row.objective_raw = combined.objective;
         row.objective_weights = combined.weights;
         row.tournament = tournamentScore;
         row.regular_season = regularScore;
@@ -5501,6 +6054,68 @@
       });
     }
 
+    if (ensembleEnabled && scored.length >= 2) {
+      const ensembleSourceRows = [...scored].sort((a, b) => b.objective - a.objective);
+      const ensembleParams = buildTopKEnsembleParams(ensembleSourceRows, ensembleTopK, ensembleTemperature);
+      if (ensembleParams) {
+        const beforeBest = bestObjectiveSoFar;
+        const tournamentScore = includeTournament
+          ? evaluateTuningCandidate(
+              ensembleParams,
+              finalTournamentContexts,
+              adjustedTeamStats,
+              historical,
+              season,
+              finalTournamentEvalCfg,
+            )
+          : null;
+        const regularScore = includeRegular
+          ? evaluateRegularSeasonCandidate(
+              ensembleParams,
+              adjustedTeamStats,
+              historical,
+              season,
+              finalRegularEvalCfg,
+            )
+          : null;
+        const combined = benchmarkCombinedObjective(tournamentScore, regularScore, benchmarkCfg);
+        scored.push({
+          index: scored.length,
+          source: "ensemble_topk",
+          objective: combined.objective,
+          objective_raw: combined.objective,
+          objective_weights: combined.weights,
+          tournament: tournamentScore,
+          regular_season: regularScore,
+          params: ensembleParams,
+          ensemble_top_k: Math.min(ensembleTopK, ensembleSourceRows.length),
+          ensemble_temperature: ensembleTemperature,
+        });
+        evaluatedCount += 1;
+        if (combined.objective > bestObjectiveSoFar + earlyStopMinImprovement) {
+          bestObjectiveSoFar = combined.objective;
+          lastImprovementAt = evaluatedCount;
+        }
+        const gain = (isFiniteNumber(beforeBest) && isFiniteNumber(bestObjectiveSoFar))
+          ? (bestObjectiveSoFar - beforeBest)
+          : null;
+        phaseSummary.push({
+          phase: "ensemble",
+          evaluated: 1,
+          gain,
+          best_objective: isFiniteNumber(bestObjectiveSoFar) ? bestObjectiveSoFar : null,
+          stopped_early: stoppedEarly,
+          top_k: Math.min(ensembleTopK, ensembleSourceRows.length),
+          temperature: ensembleTemperature,
+        });
+        emitProgress("ensemble", true, {
+          best_objective: bestObjectiveSoFar,
+          top_k: Math.min(ensembleTopK, ensembleSourceRows.length),
+          temperature: ensembleTemperature,
+        });
+      }
+    }
+
     scored.sort((a, b) => b.objective - a.objective);
     const best = scored[0] || null;
     const base = scored.find((row) => row.source === "base") || null;
@@ -5521,9 +6136,26 @@
       settings: {
         holdout_max_seasons: holdoutMaxSeasons,
         regular_max_seasons: regularMaxSeasons,
+        leave_one_season_out: leaveOneSeasonOut,
+        tournament_loso: tournamentLoso,
+        regular_loso: regularLoso,
+        strict_no_leakage: evalCfg.strict_no_leakage !== false,
         fast_models: searchFastModels,
         full_rescore_fast_models: fullRescoreFastModels,
         full_rescore_top_k: fullRescoreTopK,
+        ensemble_top_k: ensembleTopK,
+        ensemble_temperature: ensembleTemperature,
+        tournament_contexts_total: tournamentContexts.length,
+        regular_contexts_total: regularContexts.length,
+        tournament_contexts_per_candidate: tournamentContextsPerCandidate,
+        regular_contexts_per_candidate: regularContextsPerCandidate,
+        search_recent_contexts_anchor: searchRecentContextsAnchor,
+        min_eval_rate: minEvalRate,
+        auto_speed_guard: speedGuardEnabled,
+        speed_guard_grace_evals: speedGuardGraceEvals,
+        speed_guard_cooldown: speedGuardCooldown,
+        speed_guard_min_contexts: speedGuardMinContexts,
+        speed_guard_adjustments: speedGuardAdjustments,
         tournament_context_limit: (() => {
           const raw = Math.round(clampNumber(
             finiteOr(tournamentEvalCfg.tournament_context_limit, holdoutMaxSeasons),
@@ -5576,6 +6208,31 @@
         regular_objective_logloss_weight: finiteOr(evalCfg.regular_objective_logloss_weight, 0.55),
         regular_objective_brier_weight: finiteOr(evalCfg.regular_objective_brier_weight, 0.25),
         regular_objective_accuracy_weight: finiteOr(evalCfg.regular_objective_accuracy_weight, 0.2),
+        robust_std_weight: clampNumber(
+          finiteOr(tournamentEvalCfg.robust_std_weight, finiteOr(tournamentEvalCfg.objective_stability_penalty, 0.08)),
+          0,
+          1.5,
+        ),
+        robust_downside_weight: clampNumber(finiteOr(tournamentEvalCfg.robust_downside_weight, 0.1), 0, 1.5),
+        robust_downside_quantile: clampNumber(finiteOr(tournamentEvalCfg.robust_downside_quantile, 0.2), 0.01, 0.5),
+        regular_robust_std_weight: clampNumber(
+          finiteOr(
+            evalCfg.regular_robust_std_weight,
+            finiteOr(evalCfg.robust_std_weight, finiteOr(evalCfg.objective_stability_penalty, 0.08)),
+          ),
+          0,
+          1.5,
+        ),
+        regular_robust_downside_weight: clampNumber(
+          finiteOr(evalCfg.regular_robust_downside_weight, finiteOr(evalCfg.robust_downside_weight, 0.08)),
+          0,
+          1.5,
+        ),
+        regular_robust_downside_quantile: clampNumber(
+          finiteOr(evalCfg.regular_robust_downside_quantile, finiteOr(evalCfg.robust_downside_quantile, 0.2)),
+          0.01,
+          0.5,
+        ),
         tournament_weight: clampNumber(finiteOr(benchmarkCfg.tournament_weight, 0.62), 0, 1),
         regular_weight: clampNumber(finiteOr(benchmarkCfg.regular_weight, 0.38), 0, 1),
         random_seed: randomSeed,
@@ -6204,6 +6861,9 @@
         calibrator_rows: performanceStyle.calibrator?.global?.rows || 0,
         calibrator_isotonic_points: performanceStyle.calibrator?.global?.isotonic?.points?.length || 0,
         archetype_pairs: performanceStyle.archetypeModel?.pairs || 0,
+        latent_rows: performanceStyle.latentModel?.rows || 0,
+        latent_teams: performanceStyle.latentModel?.teams || 0,
+        latent_dim: performanceStyle.latentModel?.dim || 0,
         mean_team_margin_sigma: meanTeamSigma,
         off_def_rated_teams: performanceStyle.offenseRatingBySeasonTeam?.size || 0,
         market_training_rows: performanceStyle.market_rows || 0,
@@ -6229,6 +6889,7 @@
         anti_symmetric_style_interactions: true,
         archetype_matchup_matrix: true,
         archetype_uncertainty_weighting: true,
+        latent_matchup_embeddings: true,
         rolling_form_last5_last10: true,
         quality_win_bad_loss_profile: true,
         close_game_resilience_profile: true,
