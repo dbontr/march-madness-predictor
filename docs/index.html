@@ -601,7 +601,7 @@
     <section class="controls card">
       <input id="searchInput" type="search" placeholder="Filter team or slot" />
       <button id="reloadBtn" type="button">Reload data</button>
-      <button id="resetPicksBtn" type="button">Reset picks</button>
+      <button id="builderToggleBtn" type="button">Bracket Builder</button>
       <button id="clearBtn" type="button">Clear filter</button>
     </section>
 
@@ -634,7 +634,7 @@
 
   </main>
 
-  <script src="./live-runtime.js?v=20260318r4"></script>
+  <script src="./live-runtime.js?v=20260318r5"></script>
   <script>
     const demoData = {
       meta: {
@@ -670,6 +670,7 @@
       search: "",
       loadOptions: {},
       userPicks: {},
+      builderMode: false,
       pickRequestInFlight: false,
       matchupsBySlot: new Map(),
       roundNames: new Map(),
@@ -750,6 +751,9 @@
     }
 
     function pickSummaryText() {
+      if (!state.builderMode) {
+        return "Model prediction view. Click Bracket Builder to make your own picks with live percentages.";
+      }
       const picksCount = Number(state.data?.meta?.user_bracket?.picks_count || 0);
       const lockedCount = (state.data?.best_bracket || []).filter(item => item?.is_locked).length;
       const parts = [];
@@ -769,6 +773,17 @@
       setText("pickStatus", pickSummaryText());
     }
 
+    function updateControlButtons() {
+      const reloadBtn = document.getElementById("reloadBtn");
+      const toggleBtn = document.getElementById("builderToggleBtn");
+      if (reloadBtn) {
+        reloadBtn.textContent = state.builderMode ? "Reset picks" : "Reload data";
+      }
+      if (toggleBtn) {
+        toggleBtn.textContent = state.builderMode ? "Back to Prediction" : "Bracket Builder";
+      }
+    }
+
     async function recalcFromUserPicks() {
       if (
         !window.LiveBracketRuntime ||
@@ -781,7 +796,10 @@
 
       state.pickRequestInFlight = true;
       try {
-        const payload = await window.LiveBracketRuntime.buildUserBracketPayload(state.userPicks, state.loadOptions || {});
+        const payload = await window.LiveBracketRuntime.buildUserBracketPayload(
+          state.userPicks,
+          { ...(state.loadOptions || {}), builder_mode: state.builderMode },
+        );
         state.data = normalizePayload(payload);
         const cleanPicks = state.data?.meta?.user_bracket?.picks;
         state.userPicks = (cleanPicks && typeof cleanPicks === "object") ? { ...cleanPicks } : {};
@@ -1051,10 +1069,16 @@
       const champ = titlePick?.winner || "-";
       const picksCount = Number(meta?.user_bracket?.picks_count || 0);
       setText("champValue", champ);
-      if (titlePick?.is_locked) {
+      if (state.builderMode) {
+        if (titlePick?.is_locked) {
+          setText("champSub", "locked by completed result");
+        } else if (picksCount > 0 && champ !== "-") {
+          setText("champSub", "championship pick conditioned on your selected winners");
+        } else {
+          setText("champSub", "championship slot from your manual bracket builder");
+        }
+      } else if (titlePick?.is_locked) {
         setText("champSub", "locked by completed result");
-      } else if (picksCount > 0) {
-        setText("champSub", "championship pick conditioned on your selected winners");
       } else {
         setText("champSub", "championship pick from the bracket path");
       }
@@ -1187,8 +1211,8 @@
           const selectedTeam = String(state.userPicks?.[slotName] || "");
           const aPicked = selectedTeam && teamKey(selectedTeam) === teamKey(teamA);
           const bPicked = selectedTeam && teamKey(selectedTeam) === teamKey(teamB);
-          const pickableA = !slotItem.is_locked && teamKey(teamA) !== "tbd";
-          const pickableB = !slotItem.is_locked && teamKey(teamB) !== "tbd";
+          const pickableA = state.builderMode && !slotItem.is_locked && teamKey(teamA) !== "tbd";
+          const pickableB = state.builderMode && !slotItem.is_locked && teamKey(teamB) !== "tbd";
           const topPercent = column.type === "center"
             ? centerTop(String(slotItem.slot))
             : ((idx + 0.5) / gamesInColumn) * 100;
@@ -1262,6 +1286,7 @@
     }
 
     function render() {
+      updateControlButtons();
       renderHeader();
       renderPickStatus();
       renderTitleOdds();
@@ -1269,6 +1294,9 @@
     }
 
     async function toggleUserPick(slot, team) {
+      if (!state.builderMode) {
+        return;
+      }
       const cleanSlot = String(slot || "").trim();
       const cleanTeam = String(team || "").trim();
       if (!cleanSlot || !cleanTeam || teamKey(cleanTeam) === "tbd") {
@@ -1297,11 +1325,23 @@
       render();
     });
 
-    document.getElementById("reloadBtn").addEventListener("click", loadData);
+    document.getElementById("reloadBtn").addEventListener("click", async () => {
+      if (state.builderMode) {
+        state.userPicks = {};
+        await recalcFromUserPicks();
+      } else {
+        await loadData();
+      }
+    });
 
-    document.getElementById("resetPicksBtn").addEventListener("click", async () => {
+    document.getElementById("builderToggleBtn").addEventListener("click", async () => {
+      state.builderMode = !state.builderMode;
       state.userPicks = {};
-      await recalcFromUserPicks();
+      if (state.builderMode) {
+        await recalcFromUserPicks();
+      } else {
+        await loadData();
+      }
     });
 
     document.getElementById("clearBtn").addEventListener("click", () => {

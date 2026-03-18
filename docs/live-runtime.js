@@ -5968,8 +5968,69 @@
     return accepted;
   }
 
+  function buildSelectionBracketView(context, lockedChoices = {}) {
+    const ordered = [...(context?.bracket || [])].sort(
+      (a, b) => (Number(a?.round_order || 0) - Number(b?.round_order || 0)) || String(a?.slot || "").localeCompare(String(b?.slot || "")),
+    );
+    const winners = {};
+    const summary = [];
+    const bestBracket = [];
+
+    for (const row of ordered) {
+      const slot = String(row?.slot || "").trim();
+      const teamA = resolveTeam(row?.team_a, winners);
+      const teamB = resolveTeam(row?.team_b, winners);
+      const lockedWinnerRaw = String(lockedChoices?.[slot] || "").trim();
+      const lockedWinner = lockedWinnerRaw && canonicalName(lockedWinnerRaw) !== "tbd"
+        ? lockedWinnerRaw
+        : "";
+
+      let pTeamA = Number.NaN;
+      let pTeamB = Number.NaN;
+      if (teamA !== "TBD" && teamB !== "TBD") {
+        pTeamA = predictMatchup(
+          context.model,
+          context.snapshotMap,
+          teamA,
+          teamB,
+          context.performanceStyle,
+          Number(row?.round_order || 0),
+        );
+        pTeamB = 1 - pTeamA;
+      }
+
+      const winner = lockedWinner || "";
+      winners[slot] = winner || "TBD";
+
+      const baseRow = {
+        slot,
+        round_order: Number(row?.round_order || 0),
+        round_name: String(row?.round_name || ""),
+        region: String(row?.region || ""),
+        team_a: teamA,
+        team_b: teamB,
+        p_team_a: pTeamA,
+        p_team_b: pTeamB,
+        winner,
+        is_locked: Boolean(context?.lockedResults?.[slot]),
+      };
+
+      summary.push({
+        ...baseRow,
+        team_a_win_rate: pTeamA,
+        team_b_win_rate: pTeamB,
+        matchup_count: 1,
+        matchup_share: 1,
+      });
+      bestBracket.push(baseRow);
+    }
+
+    return { summary, bestBracket };
+  }
+
   async function buildUserBracketPayload(userPicks = {}, options = {}) {
     const requestedSeason = Number(options.season || LIVE_SOLVER_CONTEXT?.season || Number.NaN);
+    const builderMode = options?.builder_mode === true;
     if (
       !LIVE_SOLVER_CONTEXT ||
       (isFiniteNumber(requestedSeason) && LIVE_SOLVER_CONTEXT.season !== requestedSeason)
@@ -5983,16 +6044,19 @@
 
     const cleanPicks = sanitizeUserPicks(userPicks, context);
     const locked = { ...(context.lockedResults || {}), ...cleanPicks };
-    const { summary, advancement, bestBracket, maxRound } = solveTournamentDeterministic(
+    const solved = solveTournamentDeterministic(
       context.model,
       context.bracket,
       context.snapshot,
       locked,
       context.performanceStyle,
     );
+    const bracketView = builderMode
+      ? buildSelectionBracketView(context, locked)
+      : { summary: solved.summary, bestBracket: solved.bestBracket };
 
-    const championCol = `reach_round_${maxRound}`;
-    const titleOdds = advancement
+    const championCol = `reach_round_${solved.maxRound}`;
+    const titleOdds = solved.advancement
       .map((row) => {
         const prob = Number(row[championCol] || 0);
         return {
@@ -6011,11 +6075,12 @@
         user_bracket: {
           picks: cleanPicks,
           picks_count: Object.keys(cleanPicks).length,
+          builder_mode: builderMode,
         },
       },
-      matchups: summary,
+      matchups: bracketView.summary,
       title_odds: titleOdds,
-      best_bracket: bestBracket,
+      best_bracket: bracketView.bestBracket,
       team_logos: context.teamLogos || {},
     };
   }
