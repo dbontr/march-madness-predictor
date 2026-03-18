@@ -481,10 +481,7 @@
       font-size: 0.88rem;
       font-weight: 700;
       min-width: 0;
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      gap: 6px;
-      align-items: center;
+      display: block;
     }
 
     .team-name-text {
@@ -493,24 +490,6 @@
       white-space: nowrap;
       display: block;
       min-width: 0;
-    }
-
-    .seed-tag {
-      display: inline-grid;
-      place-items: center;
-      min-width: 2.35ch;
-      height: 1.45em;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: #f2e6d2;
-      color: #5f4825;
-      font-size: 0.7rem;
-      line-height: 1;
-      font-family: var(--mono);
-      font-variant-numeric: tabular-nums;
-      padding: 0 0.42em;
-      flex: 0 0 auto;
-      justify-self: start;
     }
 
     .team-pct {
@@ -637,7 +616,7 @@
     <div class="footer">GitHub Pages runtime: browser-side model + ESPN data, no backend required</div>
   </main>
 
-  <script src="./live-runtime.js?v=20260317j"></script>
+  <script src="./live-runtime.js?v=20260317l"></script>
   <script>
     const demoData = {
       meta: {
@@ -665,8 +644,7 @@
         { slot: "R2_EAST_1", round_order: 2, round_name: "Round of 32", region: "EAST", team_a: "Duke", team_b: "TCU", p_team_a: 0.77, p_team_b: 0.23, team_a_win_rate: 0.77, team_b_win_rate: 0.23, winner: "Duke", is_locked: false, matchup_count: 2800, matchup_share: 0.56 },
         { slot: "TITLE", round_order: 6, round_name: "Championship", region: "TITLE", team_a: "Duke", team_b: "Florida", p_team_a: 0.49, p_team_b: 0.51, team_a_win_rate: 0.49, team_b_win_rate: 0.51, winner: "Florida", is_locked: false, matchup_count: 1400, matchup_share: 0.28 }
       ],
-      team_logos: {},
-      team_seeds: { Florida: 1, Wisconsin: 5, Illinois: 2, Duke: 1, Siena: 16, TCU: 8 }
+      team_logos: {}
     };
 
     const state = {
@@ -719,8 +697,7 @@
         matchups: payload?.matchups || [],
         title_odds: payload?.title_odds || [],
         best_bracket: payload?.best_bracket || [],
-        team_logos: payload?.team_logos || {},
-        team_seeds: payload?.team_seeds || {}
+        team_logos: payload?.team_logos || {}
       };
     }
 
@@ -810,13 +787,6 @@
       if (!words.length) return "NA";
       if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
       return (words[0][0] + words[1][0]).toUpperCase();
-    }
-
-    function seedTagMarkup(team) {
-      const seedRaw = state.data.team_seeds?.[String(team || "")];
-      const seedNum = Number(seedRaw);
-      if (!Number.isFinite(seedNum)) return "";
-      return `<span class="seed-tag">${escapeHtml(String(seedNum))}</span>`;
     }
 
     function logoMarkup(team) {
@@ -1163,12 +1133,12 @@
               </div>
               <div class="team-row ${aWinner ? "winner" : ""} ${slotItem.is_locked ? "locked" : ""}">
                 ${logoMarkup(teamA)}
-                <span class="team-label">${seedTagMarkup(teamA)}<span class="team-name-text">${escapeHtml(teamA)}</span></span>
+                <span class="team-label"><span class="team-name-text">${escapeHtml(teamA)}</span></span>
                 <span class="team-pct">${pct(pA)}</span>
               </div>
               <div class="team-row ${bWinner ? "winner" : ""} ${slotItem.is_locked ? "locked" : ""}">
                 ${logoMarkup(teamB)}
-                <span class="team-label">${seedTagMarkup(teamB)}<span class="team-name-text">${escapeHtml(teamB)}</span></span>
+                <span class="team-label"><span class="team-name-text">${escapeHtml(teamB)}</span></span>
                 <span class="team-pct">${pct(pB)}</span>
               </div>
             </article>

@@ -1,6 +1,6 @@
 {
   "default_season": 2026,
-  "default_simulations": 1600,
+  "default_simulations": 0,
   "model_params": {
     "blend_logistic": 0.31,
     "blend_tree": 0.23,
@@ -14,10 +14,12 @@
   },
   "model_tuning": {
     "enabled": true,
-    "trials": 14,
+    "trials": 32,
     "cache_hours": 18,
-    "holdout_max_seasons": 2,
-    "backtest_simulations": 360,
+    "holdout_max_seasons": 6,
+    "season_recency_decay": 0.35,
+    "objective_actual_prob_weight": 0.18,
+    "objective_stability_penalty": 0.08,
     "random_seed": 9337
   },
   "tournament_windows": {

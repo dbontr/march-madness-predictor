@@ -87,12 +87,18 @@ At runtime, `docs/live-runtime.js`:
 
 ## Model Tuning + Backtests
 
-- Runtime backtest harness scores holdout seasons using ESPN-style round points.
-- Random-search tuning can optimize blend/shock parameters for expected bracket points.
+- Runtime backtest harness runs walk-forward holdout seasons and scores by ESPN-style round points.
+- Holdout training uses pre-tournament data only for each season (filters out NCAA tournament rounds when present).
+- Random-search tuning optimizes objective = normalized bracket score + actual-winner probability - stability penalty across seasons.
+- Seed/rank is excluded from matchup model features and tie-break scoring (performance metrics only).
 - Tuned params are cached in browser local storage to avoid rerunning every refresh.
 - Configure behavior in `docs/data/runtime/config.json` under:
   - `model_params`
   - `model_tuning`
+  - `model_tuning.holdout_max_seasons`
+  - `model_tuning.season_recency_decay`
+  - `model_tuning.objective_actual_prob_weight`
+  - `model_tuning.objective_stability_penalty`
 
 ## Raw data files
 
