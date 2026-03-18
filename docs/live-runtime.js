@@ -75,10 +75,6 @@
     uncertainty_confidence_scale: 0.34,
     shock_base: 0.08,
     shock_scale: 0.22,
-    portfolio_size: 3,
-    portfolio_candidates: 140,
-    portfolio_leverage_weight: 34,
-    portfolio_diversity_penalty: 58,
   });
   const OUTCOME_MARGIN_SCALE = 11.5;
   const DATA_QUALITY_LIMITS = Object.freeze({
@@ -1044,10 +1040,6 @@
       uncertainty_confidence_scale: clampNumber(base.uncertainty_confidence_scale, 0.08, 0.75),
       shock_base: clampNumber(base.shock_base, 0.03, 0.25),
       shock_scale: clampNumber(base.shock_scale, 0.05, 0.45),
-      portfolio_size: Math.round(clampNumber(base.portfolio_size, 1, 8)),
-      portfolio_candidates: Math.round(clampNumber(base.portfolio_candidates, 30, 500)),
-      portfolio_leverage_weight: clampNumber(base.portfolio_leverage_weight, 0, 140),
-      portfolio_diversity_penalty: clampNumber(base.portfolio_diversity_penalty, 0, 220),
     };
   }
 
@@ -3164,132 +3156,6 @@
     };
   }
 
-  function buildPortfolioBrackets(
-    model,
-    bracket,
-    snapshot,
-    randomSeed,
-    lockedWinners,
-    performanceStyle,
-    slotOdds,
-  ) {
-    const tuning = performanceStyle?.tuning || DEFAULT_TUNING;
-    const snapshotMap = new Map(snapshot.map((row) => [row.team, row]));
-    const ordered = [...bracket].sort((a, b) => (a.round_order - b.round_order) || a.slot.localeCompare(b.slot));
-    const totalSlots = ordered.length || 1;
-
-    function sampleCandidate(seedOffset, temperature, contrarianBias) {
-      const rng = new SeededRandom(randomSeed + seedOffset);
-      const winners = { ...lockedWinners };
-      const picks = [];
-      let expectedPoints = 0;
-      let leverage = 0;
-
-      for (const row of ordered) {
-        const teamA = resolveTeam(row.team_a, winners);
-        const teamB = resolveTeam(row.team_b, winners);
-        let winner = lockedWinners[row.slot] || "";
-        if (!winner) {
-          const baseProb = predictMatchup(model, snapshotMap, teamA, teamB, performanceStyle, row.round_order);
-          const adjusted = clampProb(
-            sigmoid(logit(baseProb) / Math.max(temperature, 0.01) + contrarianBias * (0.5 - baseProb) * 2.6),
-          );
-          winner = rng.next() < adjusted ? teamA : teamB;
-        }
-
-        winners[row.slot] = winner;
-        picks.push({
-          slot: row.slot,
-          round_order: row.round_order,
-          round_name: row.round_name,
-          region: row.region,
-          winner,
-        });
-
-        const roundPoints = ESPN_ROUND_POINTS[row.round_order] || 0;
-        const slotProb = finiteOr(slotOdds?.[row.slot]?.[winner], 0);
-        expectedPoints += roundPoints * slotProb;
-        leverage += roundPoints * Math.max(0, 0.5 - slotProb);
-      }
-
-      return {
-        picks,
-        expected_points: expectedPoints,
-        leverage,
-      };
-    }
-
-    const temps = [0.86, 0.95, 1.02, 1.12, 1.24, 1.38];
-    const contrarian = [0, 0.08, 0.16, 0.24];
-    const maxCandidates = tuning.portfolio_candidates;
-    const generated = [];
-    let seedOffset = 101;
-    while (generated.length < maxCandidates) {
-      for (const t of temps) {
-        for (const c of contrarian) {
-          generated.push(sampleCandidate(seedOffset, t, c));
-          seedOffset += 73;
-          if (generated.length >= maxCandidates) break;
-        }
-        if (generated.length >= maxCandidates) break;
-      }
-    }
-
-    const dedup = new Map();
-    for (const item of generated) {
-      const key = item.picks.map((pick) => `${pick.slot}:${pick.winner}`).join("|");
-      if (!dedup.has(key)) {
-        dedup.set(key, item);
-      }
-    }
-    const candidates = [...dedup.values()];
-
-    const selected = [];
-    while (selected.length < tuning.portfolio_size && selected.length < candidates.length) {
-      let best = null;
-      let bestObjective = Number.NEGATIVE_INFINITY;
-
-      for (const candidate of candidates) {
-        if (selected.includes(candidate)) continue;
-        let overlapPenalty = 0;
-        for (const chosen of selected) {
-          let overlap = 0;
-          for (let i = 0; i < candidate.picks.length; i += 1) {
-            if (candidate.picks[i].winner === chosen.picks[i].winner) {
-              overlap += 1;
-            }
-          }
-          overlapPenalty = Math.max(overlapPenalty, overlap / totalSlots);
-        }
-        const objective =
-          candidate.expected_points +
-          tuning.portfolio_leverage_weight * candidate.leverage -
-          tuning.portfolio_diversity_penalty * overlapPenalty;
-
-        if (objective > bestObjective) {
-          bestObjective = objective;
-          best = {
-            ...candidate,
-            objective,
-            overlap_penalty: overlapPenalty,
-          };
-        }
-      }
-
-      if (!best) break;
-      selected.push(best);
-    }
-
-    return selected.map((item, idx) => ({
-      rank: idx + 1,
-      expected_points: item.expected_points,
-      leverage: item.leverage,
-      objective: item.objective,
-      overlap_penalty: item.overlap_penalty,
-      picks: item.picks,
-    }));
-  }
-
   function normalizeNameColumns(rows, columns, aliasMap) {
     return rows.map((row) => {
       const out = { ...row };
@@ -3503,7 +3369,6 @@
     const config = await fetchJson("./data/runtime/config.json").catch(() => ({}));
 
     const season = Number(options.season || config.default_season || new Date().getUTCFullYear());
-    const randomSeed = Number(options.random_seed || 42);
 
     const { teamStats, historical, injuries, aliasMap, quality_report: qualityReport } = await loadRuntimeData(season);
     const adjustedTeamStats = applyInjuries(teamStats, injuries, season);
@@ -3566,21 +3431,12 @@
       aliasMap,
     );
 
-    const { summary, advancement, bestBracket, maxRound, slotOdds } = solveTournamentDeterministic(
+    const { summary, advancement, bestBracket, maxRound } = solveTournamentDeterministic(
       model,
       bracket,
       snapshot,
       lockedWinners,
       performanceStyle,
-    );
-    const portfolioBrackets = buildPortfolioBrackets(
-      model,
-      bracket,
-      snapshot,
-      randomSeed + 9001,
-      lockedWinners,
-      performanceStyle,
-      slotOdds,
     );
 
     const championCol = `reach_round_${maxRound}`;
@@ -3654,7 +3510,6 @@
           uncertainty_aware_probs: true,
           round_aware_probability_calibration: true,
           backtest_espn_points_optimized: true,
-          portfolio_bracket_generation: true,
           data_quality_guards: true,
           live_bracket_solver: "deterministic",
           seed_gap_feature: false,
@@ -3668,7 +3523,6 @@
       matchups: summary,
       title_odds: titleOdds,
       best_bracket: bestBracket,
-      portfolio_brackets: portfolioBrackets,
       team_logos: teamLogos,
       team_seeds: teamSeeds,
     };

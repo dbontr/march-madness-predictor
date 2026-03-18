@@ -10,11 +10,7 @@
     "form_scale": 6.2,
     "uncertainty_confidence_scale": 0.34,
     "shock_base": 0.08,
-    "shock_scale": 0.22,
-    "portfolio_size": 3,
-    "portfolio_candidates": 140,
-    "portfolio_leverage_weight": 34,
-    "portfolio_diversity_penalty": 58
+    "shock_scale": 0.22
   },
   "model_tuning": {
     "enabled": true,

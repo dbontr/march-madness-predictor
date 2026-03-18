@@ -82,7 +82,7 @@ At runtime, `docs/live-runtime.js`:
 5. computes weighted performance context (tempo-adjusted margins, recency, round importance, rolling form)
 6. trains an ensemble (logistic + tree + performance + continuous style interaction model)
 7. calibrates probabilities with round-aware calibrators (early vs late rounds)
-8. runs deterministic bracket solving + portfolio bracket generation
+8. runs deterministic bracket solving
 9. renders bracket board + title odds + team logos
 
 ## Model Tuning + Backtests
