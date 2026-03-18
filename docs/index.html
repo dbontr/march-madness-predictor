@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>dbontr bracket oracle</title>
+  <title>march madness predictor</title>
   <style>
     :root {
       --bg: #f3eee4;
@@ -109,7 +109,7 @@
     .controls {
       padding: 10px;
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: 1fr auto auto auto;
       gap: 8px;
       align-items: center;
     }
@@ -464,6 +464,20 @@
       border-top: 1px solid rgba(216, 204, 184, 0.55);
     }
 
+    .team-row.pickable {
+      cursor: pointer;
+      transition: background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .team-row.pickable:hover {
+      background: rgba(180, 83, 9, 0.08);
+    }
+
+    .team-row.pickable:focus-visible {
+      outline: 2px solid rgba(180, 83, 9, 0.34);
+      outline-offset: -2px;
+    }
+
     .team-row:first-of-type {
       border-top: 0;
     }
@@ -475,6 +489,12 @@
     .team-row.locked {
       border-left: 3px solid var(--ok);
       padding-left: 5px;
+    }
+
+    .team-row.user-picked {
+      border-left: 3px solid var(--accent);
+      padding-left: 5px;
+      background: rgba(180, 83, 9, 0.12);
     }
 
     .team-label {
@@ -570,8 +590,7 @@
     <header class="hero card">
       <div>
         <div class="kicker">march madness predictor</div>
-        <h1>dbontr bracket oracle</h1>
-        <p class="hero-note">Live predictions computed in-browser from ESPN data on every page load.</p>
+        <h1>march madness predictor</h1>
       </div>
       <div class="hero-meta">
         <div class="meta-pill">season <strong id="seasonValue">-</strong></div>
@@ -583,6 +602,7 @@
     <section class="controls card">
       <input id="searchInput" type="search" placeholder="Filter team or slot" />
       <button id="reloadBtn" type="button">Reload data</button>
+      <button id="resetPicksBtn" type="button">Reset picks</button>
       <button id="clearBtn" type="button">Clear filter</button>
     </section>
 
@@ -606,17 +626,16 @@
 
       <section class="bracket-panel card">
         <div class="panel-title">Bracket Tree</div>
-        <div class="board-note">Mirrored left/right bracket with a combined Final Four + Final center lane.</div>
+        <div id="pickStatus" class="board-note">Click a team to lock your bracket pick. Percentages update live from your selected path.</div>
         <div class="bracket-scroll">
           <div id="bracketBoard" class="bracket-grid"></div>
         </div>
       </section>
     </section>
 
-    <div class="footer">GitHub Pages runtime: browser-side model + ESPN data, no backend required</div>
   </main>
 
-  <script src="./live-runtime.js?v=20260318r3"></script>
+  <script src="./live-runtime.js?v=20260318r4"></script>
   <script>
     const demoData = {
       meta: {
@@ -650,6 +669,9 @@
     const state = {
       data: demoData,
       search: "",
+      loadOptions: {},
+      userPicks: {},
+      pickRequestInFlight: false,
       matchupsBySlot: new Map(),
       roundNames: new Map(),
       flowResizeBound: false,
@@ -707,11 +729,7 @@
       return Number.isFinite(parsed) ? parsed : undefined;
     }
 
-    async function loadFromBrowserRuntime() {
-      if (!window.LiveBracketRuntime || typeof window.LiveBracketRuntime.buildLivePayload !== "function") {
-        throw new Error("Browser runtime is unavailable");
-      }
-
+    function loadOptionsFromQuery() {
       const pageParams = new URLSearchParams(window.location.search);
       const options = {};
       const season = parseNumericParam(pageParams.get("season"));
@@ -720,17 +738,73 @@
       if (season !== undefined) options.season = season;
       if (simulations !== undefined) options.simulations = simulations;
       if (randomSeed !== undefined) options.random_seed = randomSeed;
+      return options;
+    }
+
+    async function loadFromBrowserRuntime(options = {}) {
+      if (!window.LiveBracketRuntime || typeof window.LiveBracketRuntime.buildLivePayload !== "function") {
+        throw new Error("Browser runtime is unavailable");
+      }
 
       const payload = await window.LiveBracketRuntime.buildLivePayload(options);
       return normalizePayload(payload);
     }
 
-    async function loadData() {
+    function pickSummaryText() {
+      const picksCount = Number(state.data?.meta?.user_bracket?.picks_count || 0);
+      const lockedCount = (state.data?.best_bracket || []).filter(item => item?.is_locked).length;
+      const parts = [];
+      if (picksCount > 0) {
+        parts.push(`${picksCount} manual picks active`);
+      } else {
+        parts.push("Click a team to lock your bracket pick");
+      }
+      parts.push("percentages update live from your selected path");
+      if (lockedCount > 0) {
+        parts.push(`${lockedCount} completed games are locked`);
+      }
+      return `${parts.join(" \u2022 ")}.`;
+    }
+
+    function renderPickStatus() {
+      setText("pickStatus", pickSummaryText());
+    }
+
+    async function recalcFromUserPicks() {
+      if (
+        !window.LiveBracketRuntime ||
+        typeof window.LiveBracketRuntime.buildUserBracketPayload !== "function"
+      ) {
+        buildIndices();
+        render();
+        return;
+      }
+
+      state.pickRequestInFlight = true;
       try {
-        state.data = await loadFromBrowserRuntime();
+        const payload = await window.LiveBracketRuntime.buildUserBracketPayload(state.userPicks, state.loadOptions || {});
+        state.data = normalizePayload(payload);
+        const cleanPicks = state.data?.meta?.user_bracket?.picks;
+        state.userPicks = (cleanPicks && typeof cleanPicks === "object") ? { ...cleanPicks } : {};
+      } catch (err) {
+        console.warn("User-pick solve failed; keeping previous payload", err);
+      } finally {
+        state.pickRequestInFlight = false;
+      }
+
+      buildIndices();
+      render();
+    }
+
+    async function loadData() {
+      state.loadOptions = loadOptionsFromQuery();
+      try {
+        state.data = await loadFromBrowserRuntime(state.loadOptions);
+        state.userPicks = {};
       } catch (runtimeErr) {
         console.warn("Browser runtime failed; using demo data", runtimeErr);
         state.data = demoData;
+        state.userPicks = {};
       }
 
       buildIndices();
@@ -976,8 +1050,15 @@
 
       const titlePick = (state.data.best_bracket || []).find(item => String(item.slot) === "TITLE");
       const champ = titlePick?.winner || "-";
+      const picksCount = Number(meta?.user_bracket?.picks_count || 0);
       setText("champValue", champ);
-      setText("champSub", titlePick?.is_locked ? "locked by completed result" : "championship pick from the bracket path");
+      if (titlePick?.is_locked) {
+        setText("champSub", "locked by completed result");
+      } else if (picksCount > 0) {
+        setText("champSub", "championship pick conditioned on your selected winners");
+      } else {
+        setText("champSub", "championship pick from the bracket path");
+      }
 
       const champLogo = document.getElementById("champLogo");
       if (champLogo) {
@@ -1077,6 +1158,7 @@
         const items = [];
         for (let idx = 0; idx < column.items.length; idx += 1) {
           const slotItem = column.items[idx];
+          const slotName = String(slotItem.slot || "");
           const winner = String(slotItem.winner || "");
           const plannedTeamA = String(slotItem.team_a || "").trim();
           const plannedTeamB = String(slotItem.team_b || "").trim();
@@ -1103,6 +1185,11 @@
 
           const aWinner = winner && teamA === winner;
           const bWinner = winner && teamB === winner;
+          const selectedTeam = String(state.userPicks?.[slotName] || "");
+          const aPicked = selectedTeam && teamKey(selectedTeam) === teamKey(teamA);
+          const bPicked = selectedTeam && teamKey(selectedTeam) === teamKey(teamB);
+          const pickableA = !slotItem.is_locked && teamKey(teamA) !== "tbd";
+          const pickableB = !slotItem.is_locked && teamKey(teamB) !== "tbd";
           const topPercent = column.type === "center"
             ? centerTop(String(slotItem.slot))
             : ((idx + 0.5) / gamesInColumn) * 100;
@@ -1123,20 +1210,20 @@
             .map(cls => `<span class="incoming ${cls}" aria-hidden="true"></span>`)
             .join("");
 
-          renderedSlots.push(String(slotItem.slot));
+          renderedSlots.push(slotName);
           items.push(`
-            <article class="game-card" data-slot="${escapeAttr(String(slotItem.slot))}" data-flow="${flow}" style="--game-top:${topPercent.toFixed(3)}%;--branch-half:${branchHalf.toFixed(1)}px;">
+            <article class="game-card" data-slot="${escapeAttr(slotName)}" data-flow="${flow}" style="--game-top:${topPercent.toFixed(3)}%;--branch-half:${branchHalf.toFixed(1)}px;">
               ${incomingMarkup}
               <div class="game-top">
                 <span>${escapeHtml(slotItem.slot)}</span>
                 <span>${escapeHtml(region || slotItem.round_name || "")}</span>
               </div>
-              <div class="team-row ${aWinner ? "winner" : ""} ${slotItem.is_locked ? "locked" : ""}">
+              <div class="team-row ${aWinner ? "winner" : ""} ${slotItem.is_locked ? "locked" : ""} ${aPicked ? "user-picked" : ""} ${pickableA ? "pickable" : ""}" ${pickableA ? `role="button" tabindex="0"` : ""} data-slot="${escapeAttr(slotName)}" data-team="${escapeAttr(teamA)}" data-pickable="${pickableA ? "true" : "false"}">
                 ${logoMarkup(teamA)}
                 <span class="team-label"><span class="team-name-text">${escapeHtml(teamA)}</span></span>
                 <span class="team-pct">${pct(pA)}</span>
               </div>
-              <div class="team-row ${bWinner ? "winner" : ""} ${slotItem.is_locked ? "locked" : ""}">
+              <div class="team-row ${bWinner ? "winner" : ""} ${slotItem.is_locked ? "locked" : ""} ${bPicked ? "user-picked" : ""} ${pickableB ? "pickable" : ""}" ${pickableB ? `role="button" tabindex="0"` : ""} data-slot="${escapeAttr(slotName)}" data-team="${escapeAttr(teamB)}" data-pickable="${pickableB ? "true" : "false"}">
                 ${logoMarkup(teamB)}
                 <span class="team-label"><span class="team-name-text">${escapeHtml(teamB)}</span></span>
                 <span class="team-pct">${pct(pB)}</span>
@@ -1177,8 +1264,33 @@
 
     function render() {
       renderHeader();
+      renderPickStatus();
       renderTitleOdds();
       renderBracketBoard();
+    }
+
+    async function toggleUserPick(slot, team) {
+      const cleanSlot = String(slot || "").trim();
+      const cleanTeam = String(team || "").trim();
+      if (!cleanSlot || !cleanTeam || teamKey(cleanTeam) === "tbd") {
+        return;
+      }
+      const current = String(state.userPicks?.[cleanSlot] || "").trim();
+      if (current && teamKey(current) === teamKey(cleanTeam)) {
+        delete state.userPicks[cleanSlot];
+      } else {
+        state.userPicks[cleanSlot] = cleanTeam;
+      }
+      await recalcFromUserPicks();
+    }
+
+    function rowPickPayloadFromTarget(target) {
+      const row = target?.closest?.(".team-row[data-pickable='true']");
+      if (!row) return null;
+      const slot = String(row.dataset.slot || "").trim();
+      const team = String(row.dataset.team || "").trim();
+      if (!slot || !team) return null;
+      return { slot, team };
     }
 
     document.getElementById("searchInput").addEventListener("input", (event) => {
@@ -1188,11 +1300,32 @@
 
     document.getElementById("reloadBtn").addEventListener("click", loadData);
 
+    document.getElementById("resetPicksBtn").addEventListener("click", async () => {
+      state.userPicks = {};
+      await recalcFromUserPicks();
+    });
+
     document.getElementById("clearBtn").addEventListener("click", () => {
       state.search = "";
       const input = document.getElementById("searchInput");
       if (input) input.value = "";
       render();
+    });
+
+    document.getElementById("bracketBoard").addEventListener("click", async (event) => {
+      if (state.pickRequestInFlight) return;
+      const payload = rowPickPayloadFromTarget(event.target);
+      if (!payload) return;
+      await toggleUserPick(payload.slot, payload.team);
+    });
+
+    document.getElementById("bracketBoard").addEventListener("keydown", async (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      if (state.pickRequestInFlight) return;
+      const payload = rowPickPayloadFromTarget(event.target);
+      if (!payload) return;
+      event.preventDefault();
+      await toggleUserPick(payload.slot, payload.team);
     });
 
     loadData();

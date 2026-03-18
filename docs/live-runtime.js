@@ -179,6 +179,7 @@
     ["EAST", "WEST"],
     ["SOUTH", "MIDWEST"],
   ]);
+  let LIVE_SOLVER_CONTEXT = null;
   const MANUAL_LOGO_OVERRIDES = Object.freeze({
     queens: "https://dxbhsrqyrr690.cloudfront.net/sidearm.nextgen.sites/queensathletics.com/images/logos/site/site.png",
     "queens university": "https://dxbhsrqyrr690.cloudfront.net/sidearm.nextgen.sites/queensathletics.com/images/logos/site/site.png",
@@ -5854,6 +5855,171 @@
     return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
   }
 
+  function sourceSlotFromRef(ref) {
+    const clean = String(ref || "").trim();
+    if (!clean.startsWith("@slot:")) return "";
+    return clean.split(":", 2)[1] || "";
+  }
+
+  function contenderSetForRef(ref, contendersBySlot) {
+    const slotRef = sourceSlotFromRef(ref);
+    if (slotRef) {
+      const slotContenders = contendersBySlot.get(slotRef);
+      if (slotContenders && slotContenders.size) {
+        return new Set(slotContenders);
+      }
+      return new Set(["TBD"]);
+    }
+    const clean = String(ref || "").trim();
+    return new Set([clean || "TBD"]);
+  }
+
+  function buildContendersBySlot(bracketRows, lockedWinners = {}) {
+    const ordered = [...(bracketRows || [])].sort(
+      (a, b) => (Number(a?.round_order || 0) - Number(b?.round_order || 0)) || String(a?.slot || "").localeCompare(String(b?.slot || "")),
+    );
+    const contendersBySlot = new Map();
+
+    for (const row of ordered) {
+      const slot = String(row?.slot || "").trim();
+      if (!slot) continue;
+
+      const locked = String(lockedWinners?.[slot] || "").trim();
+      if (locked && canonicalName(locked) !== "tbd") {
+        contendersBySlot.set(slot, new Set([locked]));
+        continue;
+      }
+
+      const contenders = new Set();
+      const sideA = contenderSetForRef(row?.team_a, contendersBySlot);
+      const sideB = contenderSetForRef(row?.team_b, contendersBySlot);
+
+      for (const team of [...sideA, ...sideB]) {
+        const clean = String(team || "").trim();
+        if (!clean || canonicalName(clean) === "tbd") continue;
+        contenders.add(clean);
+      }
+      if (!contenders.size) {
+        contenders.add("TBD");
+      }
+      contendersBySlot.set(slot, contenders);
+    }
+
+    return contendersBySlot;
+  }
+
+  function sanitizeUserPicks(rawPicks, context) {
+    if (!rawPicks || typeof rawPicks !== "object" || !context) {
+      return {};
+    }
+    const requested = [];
+    for (const [slotRaw, teamRaw] of Object.entries(rawPicks)) {
+      const slot = String(slotRaw || "").trim();
+      if (!slot || !context.bracketSlotSet?.has(slot)) {
+        continue;
+      }
+      if (context.lockedResults?.[slot]) {
+        continue;
+      }
+      const teamText = String(teamRaw || "").trim();
+      if (!teamText || canonicalName(teamText) === "tbd") {
+        continue;
+      }
+      const canonical = canonicalName(teamText);
+      const resolved = context.teamLookup?.[canonical] || teamText;
+      if (!context.snapshotMap?.has(resolved)) {
+        continue;
+      }
+      requested.push({ slot, team: resolved });
+    }
+
+    if (!requested.length) {
+      return {};
+    }
+
+    requested.sort((a, b) => {
+      const rankA = Number(context.slotOrderRank?.[a.slot]);
+      const rankB = Number(context.slotOrderRank?.[b.slot]);
+      if (isFiniteNumber(rankA) && isFiniteNumber(rankB) && rankA !== rankB) {
+        return rankA - rankB;
+      }
+      return a.slot.localeCompare(b.slot);
+    });
+
+    const accepted = {};
+    for (const pick of requested) {
+      const locked = { ...(context.lockedResults || {}), ...accepted };
+      const contendersBySlot = buildContendersBySlot(context.bracket, locked);
+      const contenders = contendersBySlot.get(pick.slot);
+      if (!contenders || !contenders.size) {
+        continue;
+      }
+      let isFeasible = false;
+      for (const contender of contenders) {
+        if (canonicalName(contender) === canonicalName(pick.team)) {
+          isFeasible = true;
+          break;
+        }
+      }
+      if (isFeasible) {
+        accepted[pick.slot] = pick.team;
+      }
+    }
+    return accepted;
+  }
+
+  async function buildUserBracketPayload(userPicks = {}, options = {}) {
+    const requestedSeason = Number(options.season || LIVE_SOLVER_CONTEXT?.season || Number.NaN);
+    if (
+      !LIVE_SOLVER_CONTEXT ||
+      (isFiniteNumber(requestedSeason) && LIVE_SOLVER_CONTEXT.season !== requestedSeason)
+    ) {
+      await buildLivePayload(options || {});
+    }
+    const context = LIVE_SOLVER_CONTEXT;
+    if (!context) {
+      throw new Error("Live solver context is unavailable");
+    }
+
+    const cleanPicks = sanitizeUserPicks(userPicks, context);
+    const locked = { ...(context.lockedResults || {}), ...cleanPicks };
+    const { summary, advancement, bestBracket, maxRound } = solveTournamentDeterministic(
+      context.model,
+      context.bracket,
+      context.snapshot,
+      locked,
+      context.performanceStyle,
+    );
+
+    const championCol = `reach_round_${maxRound}`;
+    const titleOdds = advancement
+      .map((row) => {
+        const prob = Number(row[championCol] || 0);
+        return {
+          team: String(row.team),
+          title_prob: prob,
+          note: rankNote(prob),
+        };
+      })
+      .sort((a, b) => b.title_prob - a.title_prob)
+      .slice(0, 16);
+
+    return {
+      meta: {
+        ...(context.baseMeta || {}),
+        updated_at: nowIsoNoMillis(),
+        user_bracket: {
+          picks: cleanPicks,
+          picks_count: Object.keys(cleanPicks).length,
+        },
+      },
+      matchups: summary,
+      title_odds: titleOdds,
+      best_bracket: bestBracket,
+      team_logos: context.teamLogos || {},
+    };
+  }
+
   async function buildLivePayload(options = {}) {
     const config = await fetchJson("./data/runtime/config.json").catch(() => ({}));
 
@@ -5960,76 +6126,122 @@
     const sigmaValues = [...(performanceStyle.marginSigmaBySeasonTeam?.values() || [])];
     const meanTeamSigma = sigmaValues.length ? mean(sigmaValues) : 0;
 
+    const baseMeta = {
+      season,
+      simulations: 0,
+      prediction_mode: "deterministic_elo",
+      updated_at: nowIsoNoMillis(),
+      training_metrics: {
+        logistic: model.metrics,
+        tree: performanceStyle.treeModel?.metrics || {},
+        stacker_rows: performanceStyle.stacker?.rows || 0,
+        stacker_features: performanceStyle.stacker?.weights?.length || 0,
+        calibrator_rows: performanceStyle.calibrator?.global?.rows || 0,
+        calibrator_isotonic_points: performanceStyle.calibrator?.global?.isotonic?.points?.length || 0,
+        archetype_pairs: performanceStyle.archetypeModel?.pairs || 0,
+        mean_team_margin_sigma: meanTeamSigma,
+        off_def_rated_teams: performanceStyle.offenseRatingBySeasonTeam?.size || 0,
+        market_training_rows: performanceStyle.market_rows || 0,
+        live_fast_models: liveFastModels,
+        live_training_games: trainingGames.length,
+        live_training_max_seasons: Math.round(clampNumber(finiteOr(liveCfg.max_seasons, 5), 1, 20)),
+        live_training_game_cap: Math.round(clampNumber(finiteOr(liveCfg.game_cap, 2600), 200, 50000)),
+      },
+      model_tuning: {
+        source: tuningResult.source,
+        params: tunedParams,
+        backtest: tuningResult.backtest,
+      },
+      final_four_pairs: bracketBuild.finalFourPairs,
+      final_four_pair_source: bracketBuild.finalFourPairSource,
+      data_quality: qualityReport,
+      grading_factors: {
+        tempo_adjusted_margin: true,
+        soft_outcomes: true,
+        recency_weighting: true,
+        round_importance_weighting: true,
+        continuous_style_vectors: true,
+        anti_symmetric_style_interactions: true,
+        archetype_matchup_matrix: true,
+        archetype_uncertainty_weighting: true,
+        rolling_form_last5_last10: true,
+        quality_win_bad_loss_profile: true,
+        close_game_resilience_profile: true,
+        nonlinear_quality_scaling: true,
+        close_vs_blowout_separation: true,
+        off_def_elo_margin_model: true,
+        team_variance_sigma_model: true,
+        dynamic_k_factor_updates: true,
+        preseason_bayesian_shrinkage: true,
+        fatigue_travel_schedule_effects: true,
+        hybrid_platt_isotonic_calibration: true,
+        ensemble_logistic_tree_rating_style: true,
+        home_court_aware_game_modeling: true,
+        tuned_logistic_hyperparameters: true,
+        uncertainty_aware_probs: true,
+        round_aware_probability_calibration: true,
+        market_priors_optional: true,
+        game_context_edges_optional: true,
+        matchup_interaction_features: true,
+        rolling_form_trend: true,
+        stacked_meta_blend: true,
+        backtest_espn_points_optimized: true,
+        data_quality_guards: true,
+        live_bracket_solver: "deterministic",
+        seed_inputs_removed_from_model: true,
+        seed_gap_feature: false,
+      },
+      team_logos_count: Object.keys(teamLogos).length,
+      team_logo_coverage: {
+        available: Object.keys(teamLogos).length,
+        total: snapshot.length,
+      },
+    };
+
+    const snapshotMap = new Map(snapshot.map((row) => [String(row.team || "").trim(), row]));
+    const snapshotTeams = new Set(snapshotMap.keys());
+    const teamLookup = {};
+    for (const team of snapshotTeams) {
+      teamLookup[canonicalName(team)] = team;
+    }
+    for (const [alias, canonical] of Object.entries(aliasMap || {})) {
+      const canonicalTeam = String(canonical || "").trim();
+      if (!canonicalTeam || !snapshotTeams.has(canonicalTeam)) continue;
+      teamLookup[canonicalName(alias)] = canonicalTeam;
+      teamLookup[canonicalName(canonicalTeam)] = canonicalTeam;
+    }
+
+    const orderedBracket = [...(bracket || [])].sort(
+      (a, b) => (Number(a?.round_order || 0) - Number(b?.round_order || 0)) || String(a?.slot || "").localeCompare(String(b?.slot || "")),
+    );
+    const slotOrderRank = {};
+    for (let i = 0; i < orderedBracket.length; i += 1) {
+      const slotName = String(orderedBracket[i]?.slot || "").trim();
+      if (!slotName) continue;
+      slotOrderRank[slotName] = i;
+    }
+
+    LIVE_SOLVER_CONTEXT = {
+      season,
+      model,
+      performanceStyle,
+      bracket,
+      snapshot,
+      snapshotMap,
+      teamLookup,
+      teamLogos,
+      lockedResults: { ...lockedWinners },
+      bracketSlotSet: new Set(orderedBracket.map((row) => String(row?.slot || "").trim()).filter(Boolean)),
+      slotOrderRank,
+      baseMeta,
+    };
+
     return {
       meta: {
-        season,
-        simulations: 0,
-        prediction_mode: "deterministic_elo",
-        updated_at: nowIsoNoMillis(),
-        training_metrics: {
-          logistic: model.metrics,
-          tree: performanceStyle.treeModel?.metrics || {},
-          stacker_rows: performanceStyle.stacker?.rows || 0,
-          stacker_features: performanceStyle.stacker?.weights?.length || 0,
-          calibrator_rows: performanceStyle.calibrator?.global?.rows || 0,
-          calibrator_isotonic_points: performanceStyle.calibrator?.global?.isotonic?.points?.length || 0,
-          archetype_pairs: performanceStyle.archetypeModel?.pairs || 0,
-          mean_team_margin_sigma: meanTeamSigma,
-          off_def_rated_teams: performanceStyle.offenseRatingBySeasonTeam?.size || 0,
-          market_training_rows: performanceStyle.market_rows || 0,
-          live_fast_models: liveFastModels,
-          live_training_games: trainingGames.length,
-          live_training_max_seasons: Math.round(clampNumber(finiteOr(liveCfg.max_seasons, 5), 1, 20)),
-          live_training_game_cap: Math.round(clampNumber(finiteOr(liveCfg.game_cap, 2600), 200, 50000)),
-        },
-        model_tuning: {
-          source: tuningResult.source,
-          params: tunedParams,
-          backtest: tuningResult.backtest,
-        },
-        final_four_pairs: bracketBuild.finalFourPairs,
-        final_four_pair_source: bracketBuild.finalFourPairSource,
-        data_quality: qualityReport,
-        grading_factors: {
-          tempo_adjusted_margin: true,
-          soft_outcomes: true,
-          recency_weighting: true,
-          round_importance_weighting: true,
-          continuous_style_vectors: true,
-          anti_symmetric_style_interactions: true,
-          archetype_matchup_matrix: true,
-          archetype_uncertainty_weighting: true,
-          rolling_form_last5_last10: true,
-          quality_win_bad_loss_profile: true,
-          close_game_resilience_profile: true,
-          nonlinear_quality_scaling: true,
-          close_vs_blowout_separation: true,
-          off_def_elo_margin_model: true,
-          team_variance_sigma_model: true,
-          dynamic_k_factor_updates: true,
-          preseason_bayesian_shrinkage: true,
-          fatigue_travel_schedule_effects: true,
-          hybrid_platt_isotonic_calibration: true,
-          ensemble_logistic_tree_rating_style: true,
-          home_court_aware_game_modeling: true,
-          tuned_logistic_hyperparameters: true,
-          uncertainty_aware_probs: true,
-          round_aware_probability_calibration: true,
-          market_priors_optional: true,
-          game_context_edges_optional: true,
-          matchup_interaction_features: true,
-          rolling_form_trend: true,
-          stacked_meta_blend: true,
-          backtest_espn_points_optimized: true,
-          data_quality_guards: true,
-          live_bracket_solver: "deterministic",
-          seed_inputs_removed_from_model: true,
-          seed_gap_feature: false,
-        },
-        team_logos_count: Object.keys(teamLogos).length,
-        team_logo_coverage: {
-          available: Object.keys(teamLogos).length,
-          total: snapshot.length,
+        ...baseMeta,
+        user_bracket: {
+          picks: {},
+          picks_count: 0,
         },
       },
       matchups: summary,
@@ -6041,6 +6253,7 @@
 
   window.LiveBracketRuntime = {
     buildLivePayload,
+    buildUserBracketPayload,
     runBenchmark,
   };
 })();
