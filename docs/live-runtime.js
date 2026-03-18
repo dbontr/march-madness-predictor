@@ -61,7 +61,17 @@
     quality_win_scale: 4.2,
     bad_loss_scale: 4.9,
     close_game_scale: 2.6,
+    blowout_scale: 1.8,
     consistency_scale: 2.1,
+    fatigue_scale: 2.2,
+    travel_scale: 0.8,
+    preseason_shrink_base: 0.34,
+    elo_k_base: 0.095,
+    elo_k_surprise_scale: 1.35,
+    margin_sigma_base: 9.4,
+    variance_scale: 1.0,
+    archetype_uncertainty_damp: 0.55,
+    calibration_isotonic_mix: 0.3,
     uncertainty_confidence_scale: 0.34,
     shock_base: 0.08,
     shock_scale: 0.22,
@@ -1020,7 +1030,17 @@
       quality_win_scale: clampNumber(base.quality_win_scale, 0, 9),
       bad_loss_scale: clampNumber(base.bad_loss_scale, 0, 9),
       close_game_scale: clampNumber(base.close_game_scale, 0, 6),
+      blowout_scale: clampNumber(base.blowout_scale, 0, 5),
       consistency_scale: clampNumber(base.consistency_scale, 0, 6),
+      fatigue_scale: clampNumber(base.fatigue_scale, 0, 6),
+      travel_scale: clampNumber(base.travel_scale, 0, 3),
+      preseason_shrink_base: clampNumber(base.preseason_shrink_base, 0.08, 0.7),
+      elo_k_base: clampNumber(base.elo_k_base, 0.02, 0.24),
+      elo_k_surprise_scale: clampNumber(base.elo_k_surprise_scale, 0.2, 2.8),
+      margin_sigma_base: clampNumber(base.margin_sigma_base, 5, 18),
+      variance_scale: clampNumber(base.variance_scale, 0.6, 1.8),
+      archetype_uncertainty_damp: clampNumber(base.archetype_uncertainty_damp, 0, 1),
+      calibration_isotonic_mix: clampNumber(base.calibration_isotonic_mix, 0, 0.7),
       uncertainty_confidence_scale: clampNumber(base.uncertainty_confidence_scale, 0.08, 0.75),
       shock_base: clampNumber(base.shock_base, 0.03, 0.25),
       shock_scale: clampNumber(base.shock_scale, 0.05, 0.45),
@@ -1044,6 +1064,18 @@
     }
     const ex = Math.exp(z);
     return ex / (1 + ex);
+  }
+
+  function erfApprox(x) {
+    const sign = x < 0 ? -1 : 1;
+    const ax = Math.abs(x);
+    const t = 1 / (1 + 0.3275911 * ax);
+    const y = 1 - (((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-ax * ax));
+    return sign * y;
+  }
+
+  function normalCdf(z) {
+    return 0.5 * (1 + erfApprox(z / Math.sqrt(2)));
   }
 
   function softOutcomeFromMargin(margin, scale = 11) {
@@ -1637,6 +1669,7 @@
 
     return {
       edgeByPair,
+      weightByPair,
       pairs: edgeByPair.size,
     };
   }
@@ -1655,12 +1688,19 @@
   function archetypeEdgeFromContext(performanceStyle, keyA, keyB) {
     const typeA = performanceStyle?.archetypeBySeasonTeam?.get(keyA);
     const typeB = performanceStyle?.archetypeBySeasonTeam?.get(keyB);
-    const edgeByPair = performanceStyle?.archetypeModel?.edgeByPair;
+    const archetypeModel = performanceStyle?.archetypeModel;
+    const edgeByPair = archetypeModel?.edgeByPair;
     if (!typeA || !typeB || !edgeByPair?.size) {
       return 0;
     }
-    const edge = edgeByPair.get(`${typeA}||${typeB}`);
-    return clampNumber(finiteOr(edge, 0), -0.3, 0.3);
+    const pairKey = `${typeA}||${typeB}`;
+    const edge = finiteOr(edgeByPair.get(pairKey), 0);
+    const pairWeight = finiteOr(archetypeModel?.weightByPair?.get(pairKey), 0);
+    const reliability = clampNumber(pairWeight / (pairWeight + 28), 0.08, 1);
+    const uncertaintyA = finiteOr(performanceStyle?.uncertaintyBySeasonTeam?.get(keyA), 0.55);
+    const uncertaintyB = finiteOr(performanceStyle?.uncertaintyBySeasonTeam?.get(keyB), 0.55);
+    const uncertaintyDamp = 1 - finiteOr(performanceStyle?.tuning?.archetype_uncertainty_damp, 0.55) * ((uncertaintyA + uncertaintyB) / 2);
+    return clampNumber(edge * reliability * clampNumber(uncertaintyDamp, 0.25, 1), -0.3, 0.3);
   }
 
   function computeQualityProfileByTeam(gamesByTeam, ratingByTeam, baseRating, baseMean) {
@@ -1672,6 +1712,7 @@
           quality_win: 0,
           bad_loss: 0,
           close_resilience: 0,
+          blowout_dominance: 0,
           consistency: 0.5,
           mean_surprise: 0,
         });
@@ -1683,6 +1724,7 @@
       let qualityWin = 0;
       let badLoss = 0;
       let closeResilience = 0;
+      let blowoutDominance = 0;
       let surpriseSum = 0;
       let surpriseSq = 0;
 
@@ -1694,12 +1736,15 @@
         const weakOpp = 1 - oppStrength;
         const winShare = Math.max(0, g.outcomeSoft - 0.5) * 2;
         const lossShare = Math.max(0, 0.5 - g.outcomeSoft) * 2;
-        const closeSignal = Math.max(0, 1 - Math.abs(g.adjustedMargin) / 8.5);
+        const marginAbs = Math.abs(g.adjustedMargin);
+        const closeSignal = Math.max(0, 1 - marginAbs / 8.5);
+        const blowoutSignal = Math.max(0, Math.tanh((marginAbs - 6) / 10));
         const weight = g.weight;
 
-        qualityWin += weight * winShare * oppStrength;
-        badLoss += weight * lossShare * weakOpp;
-        closeResilience += weight * closeSignal * (0.7 * surprise + 0.3 * (oppStrength - 0.5));
+        qualityWin += weight * (winShare ** 1.35) * (oppStrength ** 1.4);
+        badLoss += weight * (lossShare ** 1.45) * (weakOpp ** 1.5);
+        closeResilience += weight * closeSignal * (0.72 * surprise + 0.28 * (oppStrength - 0.5));
+        blowoutDominance += weight * blowoutSignal * Math.sign(g.adjustedMargin) * (0.45 + 0.55 * oppStrength);
         surpriseSum += weight * surprise;
         surpriseSq += weight * surprise * surprise;
         weightTotal += weight;
@@ -1710,6 +1755,7 @@
           quality_win: 0,
           bad_loss: 0,
           close_resilience: 0,
+          blowout_dominance: 0,
           consistency: 0.5,
           mean_surprise: 0,
         });
@@ -1724,6 +1770,7 @@
         quality_win: qualityWin / weightTotal,
         bad_loss: badLoss / weightTotal,
         close_resilience: closeResilience / weightTotal,
+        blowout_dominance: blowoutDominance / weightTotal,
         consistency,
         mean_surprise: meanSurprise,
       });
@@ -1778,18 +1825,231 @@
     return result;
   }
 
-  function buildPerformanceStyleContext(teamStats, games) {
+  function baseOffDefenseFromRow(row) {
+    const off = finiteOr(toNumber(row.adj_offense), 110) - 110;
+    const def = 110 - finiteOr(toNumber(row.adj_defense), 110);
+    const net = finiteOr(toNumber(row.net_rating), 0);
+    const sos = finiteOr(toNumber(row.sos), 0);
+    const q1Wins = finiteOr(toNumber(row.q1_wins), 0);
+    const q4Losses = finiteOr(toNumber(row.q4_losses), 0);
+    const resume = q1Wins - 1.1 * q4Losses;
+    return {
+      off: off + 0.1 * net + 0.05 * sos + 0.05 * resume,
+      def: def + 0.08 * net - 0.04 * sos + 0.03 * resume,
+    };
+  }
+
+  function buildPreseasonPriors(teamStats, baseOffByKey, baseDefByKey) {
+    const rows = [...teamStats].sort((a, b) =>
+      (Number(a.season) - Number(b.season)) || String(a.team || "").localeCompare(String(b.team || "")));
+    const priors = new Map();
+    for (const row of rows) {
+      const season = Number(row.season);
+      const team = String(row.team || "");
+      const key = teamSeasonKey(season, team);
+      const prevKey = teamSeasonKey(season - 1, team);
+      const baseOff = baseOffByKey.get(key) ?? 0;
+      const baseDef = baseDefByKey.get(key) ?? 0;
+      const prevOff = baseOffByKey.get(prevKey);
+      const prevDef = baseDefByKey.get(prevKey);
+      priors.set(key, {
+        off: isFiniteNumber(prevOff) ? 0.7 * baseOff + 0.3 * prevOff : baseOff,
+        def: isFiniteNumber(prevDef) ? 0.7 * baseDef + 0.3 * prevDef : baseDef,
+      });
+    }
+    return priors;
+  }
+
+  function applyRestContext(gamesByTeam) {
+    for (const teamGames of gamesByTeam.values()) {
+      const ordered = [...teamGames].sort((a, b) => a.game_index - b.game_index);
+      let prevIdx = Number.NaN;
+      ordered.forEach((g) => {
+        const idx = Number(g.game_index || 0);
+        const gap = isFiniteNumber(prevIdx) ? Math.max(0, idx - prevIdx - 1) : 4;
+        g.rest_gap = gap;
+        g.short_rest = gap <= 1 ? 1 : 0;
+        g.back_to_back = gap <= 0 ? 1 : 0;
+        prevIdx = idx;
+      });
+    }
+  }
+
+  function fitOffDefenseRatings(validGames, baseOffByKey, baseDefByKey, preseasonByKey, tuning) {
+    const off = new Map();
+    const def = new Map();
+    const gamesPlayedByTeam = new Map();
+    const keys = [...baseOffByKey.keys()];
+    for (const key of keys) {
+      const prior = preseasonByKey.get(key) || { off: baseOffByKey.get(key) ?? 0, def: baseDefByKey.get(key) ?? 0 };
+      off.set(key, prior.off);
+      def.set(key, prior.def);
+      gamesPlayedByTeam.set(key, 0);
+    }
+
+    const orderedGames = [...validGames].sort((a, b) =>
+      (Number(a.season) - Number(b.season)) || (Number(a.game_index) - Number(b.game_index)));
+    for (const game of orderedGames) {
+      const keyA = game.keyA;
+      const keyB = game.keyB;
+      if (!off.has(keyA) || !off.has(keyB)) continue;
+
+      const offA = off.get(keyA) ?? 0;
+      const defA = def.get(keyA) ?? 0;
+      const offB = off.get(keyB) ?? 0;
+      const defB = def.get(keyB) ?? 0;
+
+      const expectedMargin = (offA + defA) - (offB + defB);
+      const expectedWin = normalCdf(expectedMargin / Math.max(3, finiteOr(tuning.margin_sigma_base, 9.4)));
+      const surprise = Math.abs(game.outcomeSoft - expectedWin);
+      const marginSignal = Math.abs(Math.tanh(game.adjustedMargin / 13));
+      const baseK = finiteOr(tuning.elo_k_base, 0.095);
+      const surpriseScale = finiteOr(tuning.elo_k_surprise_scale, 1.35);
+      const kRaw =
+        baseK *
+        finiteOr(game.round_importance, 1) *
+        (0.6 + 0.55 * finiteOr(game.recency_weight, 1)) *
+        (1 + surpriseScale * surprise) *
+        (0.72 + 0.38 * marginSignal);
+      const k = clampNumber(kRaw, 0.012, 0.85);
+      const err = game.adjustedMargin - expectedMargin;
+      const offDelta = 0.52 * k * err;
+      const defDelta = 0.48 * k * err;
+
+      off.set(keyA, offA + offDelta);
+      def.set(keyA, defA + defDelta);
+      off.set(keyB, offB - offDelta);
+      def.set(keyB, defB - defDelta);
+
+      gamesPlayedByTeam.set(keyA, (gamesPlayedByTeam.get(keyA) || 0) + 1);
+      gamesPlayedByTeam.set(keyB, (gamesPlayedByTeam.get(keyB) || 0) + 1);
+    }
+
+    const shrinkBase = finiteOr(tuning.preseason_shrink_base, 0.34);
+    const rating = new Map();
+    for (const key of keys) {
+      const preseason = preseasonByKey.get(key) || { off: baseOffByKey.get(key) ?? 0, def: baseDefByKey.get(key) ?? 0 };
+      const gp = gamesPlayedByTeam.get(key) || 0;
+      const shrink = clampNumber(shrinkBase / Math.sqrt(gp + 1), 0.06, 0.72);
+      const finalOff = (1 - shrink) * (off.get(key) ?? preseason.off) + shrink * preseason.off;
+      const finalDef = (1 - shrink) * (def.get(key) ?? preseason.def) + shrink * preseason.def;
+      off.set(key, finalOff);
+      def.set(key, finalDef);
+      rating.set(key, finalOff + finalDef);
+    }
+
+    return {
+      offenseRatingBySeasonTeam: off,
+      defenseRatingBySeasonTeam: def,
+      ratingBySeasonTeam: rating,
+      gamesPlayedBySeasonTeam: gamesPlayedByTeam,
+      preseasonBySeasonTeam: preseasonByKey,
+    };
+  }
+
+  function computeScheduleProfileByTeam(gamesByTeam, ratingByTeam, baseRating, baseMean, statMap) {
+    const out = new Map();
+    for (const [key, teamGames] of gamesByTeam.entries()) {
+      if (!teamGames.length) {
+        out.set(key, {
+          short_rest_rate: 0,
+          back_to_back_rate: 0,
+          fatigue_pressure: 0,
+          travel_resilience: 0,
+          short_rest_resilience: 0,
+        });
+        continue;
+      }
+
+      const selfRating = ratingByTeam.get(key) ?? baseRating.get(key) ?? baseMean;
+      const row = statMap.get(key) || {};
+      const tempo = finiteOr(toNumber(row.tempo), 68);
+      let wSum = 0;
+      let shortW = 0;
+      let b2bW = 0;
+      let neutralW = 0;
+      let shortResilienceAcc = 0;
+
+      for (const g of teamGames) {
+        const oppRating = ratingByTeam.get(g.oppKey) ?? baseRating.get(g.oppKey) ?? baseMean;
+        const expected = sigmoid((selfRating - oppRating) / 12);
+        const surprise = g.outcomeSoft - expected;
+        const w = g.weight;
+        const shortRest = finiteOr(g.short_rest, 0);
+        const backToBack = finiteOr(g.back_to_back, 0);
+        shortW += w * shortRest;
+        b2bW += w * backToBack;
+        neutralW += w * finiteOr(g.neutral_site, 1);
+        shortResilienceAcc += w * shortRest * surprise;
+        wSum += w;
+      }
+
+      const shortRestRate = wSum > 0 ? shortW / wSum : 0;
+      const backToBackRate = wSum > 0 ? b2bW / wSum : 0;
+      const neutralRate = wSum > 0 ? neutralW / wSum : 0;
+      const tempoStress = Math.max(0, (tempo - 68) / 10);
+      const fatiguePressure = 1.25 * backToBackRate + 0.75 * shortRestRate + 0.2 * tempoStress;
+      const shortRestResilience = shortW > 1e-9 ? shortResilienceAcc / shortW : 0;
+      const travelResilience = neutralRate - 0.45;
+
+      out.set(key, {
+        short_rest_rate: shortRestRate,
+        back_to_back_rate: backToBackRate,
+        fatigue_pressure: fatiguePressure,
+        travel_resilience: travelResilience,
+        short_rest_resilience: shortRestResilience,
+      });
+    }
+    return out;
+  }
+
+  function computeTeamVarianceByTeam(gamesByTeam, offByTeam, defByTeam, tuning) {
+    const out = new Map();
+    const baseSigma = finiteOr(tuning.margin_sigma_base, 9.4);
+    for (const [key, teamGames] of gamesByTeam.entries()) {
+      if (!teamGames.length) {
+        out.set(key, baseSigma);
+        continue;
+      }
+
+      let wSum = 0;
+      let sqErr = 0;
+      for (const g of teamGames) {
+        const offSelf = offByTeam.get(key) ?? 0;
+        const defSelf = defByTeam.get(key) ?? 0;
+        const offOpp = offByTeam.get(g.oppKey) ?? 0;
+        const defOpp = defByTeam.get(g.oppKey) ?? 0;
+        const expectedMargin = (offSelf + defSelf) - (offOpp + defOpp);
+        const err = g.adjustedMargin - expectedMargin;
+        const w = g.weight;
+        wSum += w;
+        sqErr += w * err * err;
+      }
+      const rmse = Math.sqrt(sqErr / Math.max(wSum, 1e-9));
+      const sigma = Math.sqrt(rmse * rmse + 0.24 * baseSigma * baseSigma) * finiteOr(tuning.variance_scale, 1);
+      out.set(key, clampNumber(sigma, 5.5, 22));
+    }
+    return out;
+  }
+
+  function buildPerformanceStyleContext(teamStats, games, tuningInput = DEFAULT_TUNING) {
+    const tuning = normalizeTuningParams(tuningInput || {});
     const statMap = new Map();
     teamStats.forEach((row) => {
       statMap.set(teamSeasonKey(row.season, row.team), row);
     });
 
     const baseRating = new Map();
+    const baseOffByKey = new Map();
+    const baseDefByKey = new Map();
     const baseValues = [];
     for (const row of teamStats) {
       const key = teamSeasonKey(row.season, row.team);
       const rating = teamPowerScore(row);
+      const base = baseOffDefenseFromRow(row);
       baseRating.set(key, rating);
+      baseOffByKey.set(key, base.off);
+      baseDefByKey.set(key, base.def);
       baseValues.push(rating);
     }
     const baseMean = mean(baseValues);
@@ -1820,51 +2080,56 @@
       const outcomeSoft = softOutcomeFromMargin(adjustedMargin, OUTCOME_MARGIN_SCALE);
       const weight = gameSampleWeight(game, adjustedMargin, recencyInfo);
       const gameIndex = Number(game.game_index || 0);
-      validGames.push({ keyA, keyB, adjustedMargin, outcomeSoft, weight, game_index: gameIndex });
+      const recencyWeight = gameRecencyWeight(game, recencyInfo);
+      const roundWeight = roundImportance(game.round_name);
+      const neutralSite = toNumber(game.neutral_site) === 0 ? 0 : 1;
+
+      validGames.push({
+        season: Number(game.season),
+        keyA,
+        keyB,
+        adjustedMargin,
+        outcomeSoft,
+        weight,
+        game_index: gameIndex,
+        recency_weight: recencyWeight,
+        round_importance: roundWeight,
+      });
 
       if (!gamesByTeam.has(keyA)) gamesByTeam.set(keyA, []);
       if (!gamesByTeam.has(keyB)) gamesByTeam.set(keyB, []);
-      gamesByTeam.get(keyA).push({ oppKey: keyB, adjustedMargin, outcomeSoft, weight, game_index: gameIndex });
+      gamesByTeam.get(keyA).push({
+        oppKey: keyB,
+        adjustedMargin,
+        outcomeSoft,
+        weight,
+        game_index: gameIndex,
+        neutral_site: neutralSite,
+      });
       gamesByTeam.get(keyB).push({
         oppKey: keyA,
         adjustedMargin: -adjustedMargin,
         outcomeSoft: 1 - outcomeSoft,
         weight,
         game_index: gameIndex,
+        neutral_site: neutralSite,
       });
     }
 
-    let rating = new Map(baseRating);
-    for (let iter = 0; iter < 12; iter += 1) {
-      const next = new Map();
-      for (const [key, base] of baseRating.entries()) {
-        const teamGames = gamesByTeam.get(key) || [];
-        if (!teamGames.length) {
-          next.set(key, base);
-          continue;
-        }
-        let acc = 0;
-        let weightTotal = 0;
-        const selfRating = rating.get(key) ?? base;
-        for (const g of teamGames) {
-          const oppRating = rating.get(g.oppKey) ?? baseRating.get(g.oppKey) ?? baseMean;
-          const actualSoft = g.outcomeSoft;
-          const expected = sigmoid((selfRating - oppRating) / 12);
-          const surprise = actualSoft - expected;
-          const oppStrength = sigmoid((oppRating - baseMean) / 12) - 0.5;
-          const performance = oppRating + surprise * (20 + 10 * Math.abs(oppStrength));
-          const marginSignal = Math.abs(Math.tanh(g.adjustedMargin / 12));
-          const weight = g.weight * (0.85 + 0.3 * marginSignal);
-          acc += performance * weight;
-          weightTotal += weight;
-        }
-        const oppAdjusted = weightTotal > 0 ? acc / weightTotal : base;
-        next.set(key, 0.46 * base + 0.54 * oppAdjusted);
-      }
-      rating = next;
-    }
+    applyRestContext(gamesByTeam);
+    const preseasonByKey = buildPreseasonPriors(teamStats, baseOffByKey, baseDefByKey);
+    const offDef = fitOffDefenseRatings(validGames, baseOffByKey, baseDefByKey, preseasonByKey, tuning);
+    const rating = offDef.ratingBySeasonTeam;
 
     const formByTeam = computeRollingFormByTeam(gamesByTeam, rating, baseRating, baseMean);
+    const scheduleByTeam = computeScheduleProfileByTeam(gamesByTeam, rating, baseRating, baseMean, statMap);
+    const varianceByTeam = computeTeamVarianceByTeam(
+      gamesByTeam,
+      offDef.offenseRatingBySeasonTeam,
+      offDef.defenseRatingBySeasonTeam,
+      tuning,
+    );
+
     const uncertaintyByTeam = new Map();
     for (const [key] of baseRating.entries()) {
       const teamGames = gamesByTeam.get(key) || [];
@@ -1872,12 +2137,18 @@
         uncertaintyByTeam.set(key, 0.75);
         continue;
       }
-      const selfRating = rating.get(key) ?? baseRating.get(key) ?? baseMean;
+      const offSelf = offDef.offenseRatingBySeasonTeam.get(key) ?? 0;
+      const defSelf = offDef.defenseRatingBySeasonTeam.get(key) ?? 0;
       let wSum = 0;
       let sqErr = 0;
       for (const g of teamGames) {
-        const oppRating = rating.get(g.oppKey) ?? baseRating.get(g.oppKey) ?? baseMean;
-        const expected = sigmoid((selfRating - oppRating) / 12);
+        const offOpp = offDef.offenseRatingBySeasonTeam.get(g.oppKey) ?? 0;
+        const defOpp = offDef.defenseRatingBySeasonTeam.get(g.oppKey) ?? 0;
+        const expectedMargin = (offSelf + defSelf) - (offOpp + defOpp);
+        const sigmaSelf = varianceByTeam.get(key) ?? tuning.margin_sigma_base;
+        const sigmaOpp = varianceByTeam.get(g.oppKey) ?? tuning.margin_sigma_base;
+        const sigma = Math.sqrt(sigmaSelf * sigmaSelf + sigmaOpp * sigmaOpp + tuning.margin_sigma_base * tuning.margin_sigma_base);
+        const expected = normalCdf(expectedMargin / Math.max(1e-6, sigma));
         const err = g.outcomeSoft - expected;
         const w = g.weight;
         wSum += w;
@@ -1885,7 +2156,8 @@
       }
       const rmse = Math.sqrt(sqErr / Math.max(wSum, 1e-9));
       const formVol = finiteOr(formByTeam.get(key)?.volatility, 0);
-      const uncertainty = Math.min(0.9, 0.2 + 1.1 / Math.sqrt(wSum + 2) + 0.42 * rmse + 0.55 * formVol);
+      const sigmaNorm = (varianceByTeam.get(key) ?? tuning.margin_sigma_base) / Math.max(1e-6, tuning.margin_sigma_base);
+      const uncertainty = Math.min(0.9, 0.18 + 1.05 / Math.sqrt(wSum + 2) + 0.38 * rmse + 0.48 * formVol + 0.16 * sigmaNorm);
       uncertaintyByTeam.set(key, uncertainty);
     }
 
@@ -1894,14 +2166,21 @@
     const qualityByTeam = computeQualityProfileByTeam(gamesByTeam, rating, baseRating, baseMean);
 
     return {
+      tuning,
       ratingBySeasonTeam: rating,
+      offenseRatingBySeasonTeam: offDef.offenseRatingBySeasonTeam,
+      defenseRatingBySeasonTeam: offDef.defenseRatingBySeasonTeam,
+      marginSigmaBySeasonTeam: varianceByTeam,
       uncertaintyBySeasonTeam: uncertaintyByTeam,
+      scheduleBySeasonTeam: scheduleByTeam,
       styleVectorBySeasonTeam: styleVectorByTeam,
       archetypeBySeasonTeam: archetypeByTeam,
       formBySeasonTeam: formByTeam,
       qualityBySeasonTeam: qualityByTeam,
       styleModel,
       archetypeModel,
+      gamesPlayedBySeasonTeam: offDef.gamesPlayedBySeasonTeam,
+      preseasonBySeasonTeam: offDef.preseasonBySeasonTeam,
     };
   }
 
@@ -1923,21 +2202,40 @@
       tuning.quality_win_scale * finiteOr(qualityA.quality_win, 0) -
       tuning.bad_loss_scale * finiteOr(qualityA.bad_loss, 0) +
       tuning.close_game_scale * finiteOr(qualityA.close_resilience, 0) +
+      tuning.blowout_scale * finiteOr(qualityA.blowout_dominance, 0) +
       tuning.consistency_scale * (finiteOr(qualityA.consistency, 0.5) - 0.5);
     const qualityAdjB =
       tuning.quality_win_scale * finiteOr(qualityB.quality_win, 0) -
       tuning.bad_loss_scale * finiteOr(qualityB.bad_loss, 0) +
       tuning.close_game_scale * finiteOr(qualityB.close_resilience, 0) +
+      tuning.blowout_scale * finiteOr(qualityB.blowout_dominance, 0) +
       tuning.consistency_scale * (finiteOr(qualityB.consistency, 0.5) - 0.5);
-    const perfA =
-      (performanceStyle?.ratingBySeasonTeam?.get(keyA) ?? teamPowerScore(rowA)) +
-      tuning.form_scale * formA +
-      qualityAdjA;
-    const perfB =
-      (performanceStyle?.ratingBySeasonTeam?.get(keyB) ?? teamPowerScore(rowB)) +
-      tuning.form_scale * formB +
-      qualityAdjB;
-    const performanceProb = sigmoid((perfA - perfB) / 10.4);
+    const scheduleA = performanceStyle?.scheduleBySeasonTeam?.get(keyA) || {};
+    const scheduleB = performanceStyle?.scheduleBySeasonTeam?.get(keyB) || {};
+    const fatigueEdge =
+      -tuning.fatigue_scale * (finiteOr(scheduleA.fatigue_pressure, 0) - finiteOr(scheduleB.fatigue_pressure, 0)) +
+      0.9 * (finiteOr(scheduleA.short_rest_resilience, 0) - finiteOr(scheduleB.short_rest_resilience, 0));
+    const travelEdge = tuning.travel_scale * (finiteOr(scheduleA.travel_resilience, 0) - finiteOr(scheduleB.travel_resilience, 0));
+
+    const offA = performanceStyle?.offenseRatingBySeasonTeam?.get(keyA) ?? 0;
+    const defA = performanceStyle?.defenseRatingBySeasonTeam?.get(keyA) ?? 0;
+    const offB = performanceStyle?.offenseRatingBySeasonTeam?.get(keyB) ?? 0;
+    const defB = performanceStyle?.defenseRatingBySeasonTeam?.get(keyB) ?? 0;
+    const baseMargin = (offA + defA) - (offB + defB);
+    const contextualMargin =
+      baseMargin +
+      tuning.form_scale * (formA - formB) +
+      (qualityAdjA - qualityAdjB) +
+      fatigueEdge +
+      travelEdge;
+    const sigmaA = finiteOr(performanceStyle?.marginSigmaBySeasonTeam?.get(keyA), tuning.margin_sigma_base);
+    const sigmaB = finiteOr(performanceStyle?.marginSigmaBySeasonTeam?.get(keyB), tuning.margin_sigma_base);
+    const matchupSigma = Math.sqrt(
+      sigmaA * sigmaA +
+      sigmaB * sigmaB +
+      tuning.margin_sigma_base * tuning.margin_sigma_base,
+    );
+    const performanceProb = clampProb(normalCdf(contextualMargin / Math.max(1e-6, matchupSigma)));
 
     const styleEdge = styleEdgeFromContext(performanceStyle, keyA, keyB);
     const styleProb = clampProb(0.5 + tuning.style_scale * styleEdge);
@@ -1962,7 +2260,7 @@
     return Math.min(0.95, Math.max(0.08, Number(raw)));
   }
 
-  function fitCalibratorRows(rows) {
+  function fitPlattCalibratorRows(rows) {
     if (!rows.length) {
       return { alpha: 1, beta: 0, rows: 0 };
     }
@@ -1994,6 +2292,81 @@
     }
 
     return { alpha, beta, rows: rows.length };
+  }
+
+  function fitIsotonicCalibratorRows(rows) {
+    if (!rows.length) return null;
+    const sorted = [...rows]
+      .map((row) => ({
+        x: clampProb(row.baseProb),
+        y: clampProb(row.target),
+        w: Math.max(1e-6, finiteOr(row.weight, 1)),
+      }))
+      .sort((a, b) => a.x - b.x);
+
+    const stack = [];
+    for (const point of sorted) {
+      stack.push({
+        sumW: point.w,
+        sumY: point.y * point.w,
+        sumX: point.x * point.w,
+      });
+      while (stack.length >= 2) {
+        const last = stack[stack.length - 1];
+        const prev = stack[stack.length - 2];
+        const prevMean = prev.sumY / prev.sumW;
+        const lastMean = last.sumY / last.sumW;
+        if (prevMean <= lastMean + 1e-12) break;
+        prev.sumW += last.sumW;
+        prev.sumY += last.sumY;
+        prev.sumX += last.sumX;
+        stack.pop();
+      }
+    }
+
+    const points = stack.map((block) => ({
+      x: clampProb(block.sumX / block.sumW),
+      y: clampProb(block.sumY / block.sumW),
+    }));
+
+    return points.length ? { points } : null;
+  }
+
+  function applyIsotonicCalibrator(calibrator, prob) {
+    if (!calibrator?.points?.length) {
+      return clampProb(prob);
+    }
+    const p = clampProb(prob);
+    const points = calibrator.points;
+    if (p <= points[0].x) return points[0].y;
+    if (p >= points[points.length - 1].x) return points[points.length - 1].y;
+
+    for (let i = 0; i < points.length - 1; i += 1) {
+      const left = points[i];
+      const right = points[i + 1];
+      if (p < left.x || p > right.x) continue;
+      const dx = Math.max(1e-9, right.x - left.x);
+      const t = (p - left.x) / dx;
+      return clampProb(left.y * (1 - t) + right.y * t);
+    }
+    return points[points.length - 1].y;
+  }
+
+  function fitCalibratorRows(rows, tuning = DEFAULT_TUNING) {
+    if (!rows.length) {
+      return { alpha: 1, beta: 0, isotonic: null, iso_mix: 0, rows: 0 };
+    }
+    const platt = fitPlattCalibratorRows(rows);
+    const isotonic = fitIsotonicCalibratorRows(rows);
+    const baseMix = clampNumber(finiteOr(tuning.calibration_isotonic_mix, 0.3), 0, 0.7);
+    const sampleScale = clampNumber(1 - 40 / (rows.length + 80), 0.18, 1);
+    return {
+      alpha: platt.alpha,
+      beta: platt.beta,
+      isotonic,
+      iso_mix: isotonic ? baseMix * sampleScale : 0,
+      rows: rows.length,
+    };
   }
 
   function fitProbabilityCalibrator(teamStats, games, model, performanceStyle) {
@@ -2037,28 +2410,33 @@
       };
     }
 
+    const tuning = performanceStyle?.tuning || DEFAULT_TUNING;
     return {
-      global: fitCalibratorRows(rows),
-      early: fitCalibratorRows(earlyRows.length ? earlyRows : rows),
-      late: fitCalibratorRows(lateRows.length ? lateRows : rows),
+      global: fitCalibratorRows(rows, tuning),
+      early: fitCalibratorRows(earlyRows.length ? earlyRows : rows, tuning),
+      late: fitCalibratorRows(lateRows.length ? lateRows : rows, tuning),
     };
   }
 
-  function pickRoundCalibrator(calibration, roundOrder, baseProb) {
+  function pickRoundCalibrator(calibration, roundOrder, baseProb, tuning = DEFAULT_TUNING) {
     if (!calibration || !calibration.global) {
-      return { alpha: 1, beta: 0 };
+      return { alpha: 1, beta: 0, isotonic: null, iso_mix: 0 };
     }
     const early = calibration.early || calibration.global;
     const late = calibration.late || calibration.global;
     const difficulty = 1 - Math.abs(baseProb - 0.5) * 2;
 
-    if (roundOrder >= 5) return late;
-    if (roundOrder <= 2) return early;
+    if (roundOrder >= 5) return { ...late, iso_mix: clampNumber(finiteOr(late.iso_mix, 0), 0, 0.7) };
+    if (roundOrder <= 2) return { ...early, iso_mix: clampNumber(finiteOr(early.iso_mix, 0), 0, 0.7) };
     const lateWeight = roundOrder >= 4 ? 0.75 + 0.2 * difficulty : 0.45 + 0.35 * difficulty;
     const w = clampNumber(lateWeight, 0, 1);
+    const isoSource = w >= 0.5 ? late : early;
+    const isoMix = clampNumber(finiteOr(tuning.calibration_isotonic_mix, 0.3), 0, 0.7);
     return {
       alpha: early.alpha * (1 - w) + late.alpha * w,
       beta: early.beta * (1 - w) + late.beta * w,
+      isotonic: isoSource?.isotonic || calibration.global?.isotonic || null,
+      iso_mix: isoSource?.isotonic ? isoMix : 0,
     };
   }
 
@@ -2075,13 +2453,18 @@
 
     const tuning = performanceStyle?.tuning || DEFAULT_TUNING;
     const blended = computeRawBlendProb(model, rowA, rowB, teamA, teamB, performanceStyle);
-    const calib = pickRoundCalibrator(performanceStyle?.calibrator, roundOrder, blended);
+    const calib = pickRoundCalibrator(performanceStyle?.calibrator, roundOrder, blended, tuning);
     const calibratedLogit = calib.alpha * logit(blended) + calib.beta;
+    const plattProb = sigmoid(calibratedLogit);
+    const isotonicProb = applyIsotonicCalibrator(calib.isotonic, blended);
+    const calibratedProb = clampProb(
+      (1 - finiteOr(calib.iso_mix, 0)) * plattProb + finiteOr(calib.iso_mix, 0) * isotonicProb,
+    );
     const uncertaintyA = teamUncertainty(performanceStyle, rowA.season, teamA);
     const uncertaintyB = teamUncertainty(performanceStyle, rowB.season, teamB);
     const matchupUncertainty = (uncertaintyA + uncertaintyB) / 2;
     const confidenceScale = clampNumber(1 - tuning.uncertainty_confidence_scale * matchupUncertainty, 0.35, 1);
-    const confidenceAdjusted = sigmoid(calibratedLogit * confidenceScale);
+    const confidenceAdjusted = sigmoid(logit(calibratedProb) * confidenceScale);
     return temperedProb(confidenceAdjusted, 0.98);
   }
 
@@ -2633,7 +3016,17 @@
       quality_win_scale: 1 + 7 * rng.next(),
       bad_loss_scale: 1 + 7 * rng.next(),
       close_game_scale: 0.4 + 4.2 * rng.next(),
+      blowout_scale: 0.2 + 3.2 * rng.next(),
       consistency_scale: 0.4 + 3.9 * rng.next(),
+      fatigue_scale: 0.2 + 4.8 * rng.next(),
+      travel_scale: 0.1 + 2.4 * rng.next(),
+      preseason_shrink_base: 0.12 + 0.5 * rng.next(),
+      elo_k_base: 0.035 + 0.17 * rng.next(),
+      elo_k_surprise_scale: 0.35 + 2.1 * rng.next(),
+      margin_sigma_base: 6 + 9 * rng.next(),
+      variance_scale: 0.7 + 0.9 * rng.next(),
+      archetype_uncertainty_damp: 0.15 + 0.75 * rng.next(),
+      calibration_isotonic_mix: 0.05 + 0.55 * rng.next(),
       uncertainty_confidence_scale: 0.16 + 0.5 * rng.next(),
       shock_base: 0.05 + 0.14 * rng.next(),
       shock_scale: 0.08 + 0.3 * rng.next(),
@@ -2643,6 +3036,7 @@
   function evaluateTuningCandidate(params, contexts, teamStats, historical) {
     let pointsTotal = 0;
     let normTotal = 0;
+    let entropyTotal = 0;
     let scored = 0;
 
     for (const context of contexts) {
@@ -2653,7 +3047,7 @@
       }
 
       const model = trainModel(trainStats, trainGames);
-      const performanceStyle = buildPerformanceStyleContext(trainStats, trainGames);
+      const performanceStyle = buildPerformanceStyleContext(trainStats, trainGames, params);
       performanceStyle.tuning = params;
       performanceStyle.treeModel = trainTreeModel(trainStats, trainGames, params);
       performanceStyle.calibrator = fitProbabilityCalibrator(trainStats, trainGames, model, performanceStyle);
@@ -2667,8 +3061,14 @@
         performanceStyle,
       );
       const score = scoreBracketAgainstActual(solved.bestBracket, context.bracket, context.actualBySlot);
+      const champCol = `reach_round_${solved.maxRound}`;
+      const champProbs = solved.advancement.map((row) => clampProb(Number(row[champCol] || 0)));
+      const entropyRaw = -champProbs.reduce((acc, p) => acc + (p > 1e-9 ? p * Math.log(p) : 0), 0);
+      const maxEntropy = Math.log(Math.max(champProbs.length, 2));
+      const entropyNorm = maxEntropy > 1e-9 ? entropyRaw / maxEntropy : 0;
       pointsTotal += score.points;
       normTotal += score.normalized;
+      entropyTotal += entropyNorm;
       scored += 1;
     }
 
@@ -2676,10 +3076,13 @@
       return { objective: Number.NEGATIVE_INFINITY, avg_points: 0, avg_normalized: 0, seasons_scored: 0 };
     }
 
+    const avgNorm = normTotal / scored;
+    const avgEntropy = entropyTotal / scored;
     return {
-      objective: normTotal / scored,
+      objective: avgNorm + 0.05 * avgEntropy,
       avg_points: pointsTotal / scored,
-      avg_normalized: normTotal / scored,
+      avg_normalized: avgNorm,
+      avg_champion_entropy: avgEntropy,
       seasons_scored: scored,
     };
   }
@@ -2698,7 +3101,7 @@
 
     const fingerprint = dataFingerprint(teamStats, historical);
     const cacheHours = clampNumber(finiteOr(tuningCfg.cache_hours, 18), 1, 240);
-    const cacheKey = `mmp:tuning:v3:${season}:${fingerprint}`;
+    const cacheKey = `mmp:tuning:v4:${season}:${fingerprint}`;
     const cached = safeReadLocalStorageJson(cacheKey);
     const now = Date.now();
     if (cached && isFiniteNumber(cached.created_at) && (now - cached.created_at) < cacheHours * 3600 * 1000) {
@@ -2745,6 +3148,7 @@
       objective: bestScore.objective,
       avg_points: bestScore.avg_points,
       avg_normalized: bestScore.avg_normalized,
+      avg_champion_entropy: bestScore.avg_champion_entropy,
       seasons_scored: bestScore.seasons_scored,
     };
     safeWriteLocalStorageJson(cacheKey, {
@@ -3109,7 +3513,7 @@
     const tunedParams = normalizeTuningParams(tuningResult.params || {});
 
     const model = trainModel(adjustedTeamStats, historical);
-    const performanceStyle = buildPerformanceStyleContext(adjustedTeamStats, historical);
+    const performanceStyle = buildPerformanceStyleContext(adjustedTeamStats, historical, tunedParams);
     performanceStyle.tuning = tunedParams;
     performanceStyle.treeModel = trainTreeModel(adjustedTeamStats, historical, tunedParams);
     performanceStyle.calibrator = fitProbabilityCalibrator(adjustedTeamStats, historical, model, performanceStyle);
@@ -3200,6 +3604,8 @@
         teamSeeds[team] = seed;
       }
     });
+    const sigmaValues = [...(performanceStyle.marginSigmaBySeasonTeam?.values() || [])];
+    const meanTeamSigma = sigmaValues.length ? mean(sigmaValues) : 0;
 
     return {
       meta: {
@@ -3211,7 +3617,10 @@
           logistic: model.metrics,
           tree: performanceStyle.treeModel?.metrics || {},
           calibrator_rows: performanceStyle.calibrator?.global?.rows || 0,
+          calibrator_isotonic_points: performanceStyle.calibrator?.global?.isotonic?.points?.length || 0,
           archetype_pairs: performanceStyle.archetypeModel?.pairs || 0,
+          mean_team_margin_sigma: meanTeamSigma,
+          off_def_rated_teams: performanceStyle.offenseRatingBySeasonTeam?.size || 0,
         },
         model_tuning: {
           source: tuningResult.source,
@@ -3229,9 +3638,18 @@
           continuous_style_vectors: true,
           anti_symmetric_style_interactions: true,
           archetype_matchup_matrix: true,
+          archetype_uncertainty_weighting: true,
           rolling_form_last5_last10: true,
           quality_win_bad_loss_profile: true,
           close_game_resilience_profile: true,
+          nonlinear_quality_scaling: true,
+          close_vs_blowout_separation: true,
+          off_def_elo_margin_model: true,
+          team_variance_sigma_model: true,
+          dynamic_k_factor_updates: true,
+          preseason_bayesian_shrinkage: true,
+          fatigue_travel_schedule_effects: true,
+          hybrid_platt_isotonic_calibration: true,
           ensemble_logistic_tree_rating_style: true,
           uncertainty_aware_probs: true,
           round_aware_probability_calibration: true,
