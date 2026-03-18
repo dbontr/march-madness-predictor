@@ -1,0 +1,469 @@
+{
+  "generated_at": "2026-03-18T05:35:07Z",
+  "season": 2026,
+  "trials_requested": 20,
+  "candidates_evaluated": 183,
+  "include_tournament": true,
+  "include_regular": true,
+  "include_postseason": true,
+  "tournament_contexts": [
+    2024,
+    2025
+  ],
+  "settings": {
+    "holdout_max_seasons": 2,
+    "regular_max_seasons": 2,
+    "fast_models": true,
+    "full_rescore_fast_models": true,
+    "full_rescore_top_k": 4,
+    "tournament_context_limit": 2,
+    "tournament_train_game_cap": 1800,
+    "regular_context_limit": 3,
+    "regular_train_game_cap": 1800,
+    "regular_test_game_cap": 280,
+    "regular_split_fractions": [
+      0.8
+    ],
+    "regular_min_train_games": 650,
+    "regular_min_test_games": 180,
+    "refine_rounds": 1,
+    "refine_top_k": 5,
+    "refine_per_top": 6,
+    "refine_scale_start": 0.34,
+    "refine_scale_decay": 0.62,
+    "crossover_rounds": 1,
+    "crossover_top_k": 6,
+    "crossover_children": 8,
+    "crossover_noise_scale": 0.1,
+    "cem_rounds": 2,
+    "cem_samples": 32,
+    "cem_elite_fraction": 0.16,
+    "cem_explore_floor": 0.12,
+    "cem_spread_decay": 0.8,
+    "cem_spread_min": 0.02,
+    "cem_spread_max": 0.4,
+    "local_search_passes": 1,
+    "local_search_step_start": 0.12,
+    "local_search_step_decay": 0.62,
+    "local_search_min_step": 0.02,
+    "local_search_max_candidates": 60,
+    "phase_stagnation_patience": 1,
+    "phase_stagnation_min_gain": 0.00004,
+    "early_stop_patience": 120,
+    "early_stop_min_improvement": 0.00004,
+    "early_stop_min_fraction": 0.35,
+    "early_stop_min_evaluated": 65,
+    "regular_objective_logloss_weight": 0.35,
+    "regular_objective_brier_weight": 0.15,
+    "regular_objective_accuracy_weight": 0.5,
+    "tournament_weight": 0.52,
+    "regular_weight": 0.48,
+    "random_seed": 20260318
+  },
+  "stopped_early": false,
+  "phase_summary": [
+    {
+      "phase": "base",
+      "evaluated": 1,
+      "gain": 0.6465212458193665,
+      "best_objective": 0.6465212458193665,
+      "stopped_early": false
+    },
+    {
+      "phase": "random",
+      "evaluated": 20,
+      "gain": 0,
+      "best_objective": 0.6465212458193665,
+      "stopped_early": false,
+      "trials": 20
+    },
+    {
+      "phase": "refine_r1",
+      "evaluated": 30,
+      "gain": 0.012003645656717854,
+      "best_objective": 0.6585248914760844,
+      "stopped_early": false,
+      "round": 1,
+      "round_scale": 0.34,
+      "parent_count": 5
+    },
+    {
+      "phase": "crossover_r1",
+      "evaluated": 8,
+      "gain": 0,
+      "best_objective": 0.6585248914760844,
+      "stopped_early": false,
+      "round": 1,
+      "parent_count": 6,
+      "children_target": 8
+    },
+    {
+      "phase": "cem_r1",
+      "evaluated": 32,
+      "gain": 0.00570413932341951,
+      "best_objective": 0.6642290307995039,
+      "stopped_early": false,
+      "round": 1,
+      "samples": 32,
+      "explore_rate": 0.12
+    },
+    {
+      "phase": "cem_r2",
+      "evaluated": 32,
+      "gain": 0.0011415805614322094,
+      "best_objective": 0.6653706113609361,
+      "stopped_early": false,
+      "round": 2,
+      "samples": 32,
+      "explore_rate": 0.12
+    },
+    {
+      "phase": "local_p1",
+      "evaluated": 60,
+      "gain": 0.001991067455761497,
+      "best_objective": 0.6673616788166976,
+      "stopped_early": false,
+      "pass": 1,
+      "step_start": 0.12
+    },
+    {
+      "phase": "full_rescore",
+      "evaluated": 4,
+      "gain": 0,
+      "best_objective": 0.6673616788166976,
+      "stopped_early": false,
+      "top_k": 4
+    }
+  ],
+  "base": {
+    "index": 0,
+    "source": "base",
+    "objective": 0.6465212458193665,
+    "objective_weights": {
+      "tournament": 0.52,
+      "regular": 0.48
+    },
+    "tournament": {
+      "objective": 0.7803043816250035,
+      "avg_points": 2489.8809021139746,
+      "avg_normalized": 0.6759990493756822,
+      "avg_actual_winner_prob": 0.5991614147708457,
+      "normalized_stddev": 0.04429653011788765,
+      "seasons_scored": 2,
+      "per_season": [
+        {
+          "season": 2024,
+          "weight": 0.7046880897187134,
+          "points": 2660,
+          "max_points": 3650,
+          "normalized": 0.7287671232876712,
+          "avg_actual_winner_prob": 0.6149632100984598,
+          "actual_slots_scored": 190
+        },
+        {
+          "season": 2025,
+          "weight": 1,
+          "points": 2370,
+          "max_points": 3710,
+          "normalized": 0.6388140161725068,
+          "avg_actual_winner_prob": 0.5880260778073032,
+          "actual_slots_scored": 196
+        }
+      ]
+    },
+    "regular_season": {
+      "objective": 0.5015895153632599,
+      "contexts_scored": 3,
+      "games_scored": 840,
+      "avg_log_loss": 0.5234899713750586,
+      "avg_brier_score": 0.1749771764428502,
+      "avg_accuracy": 0.7418171124184719,
+      "by_context": [
+        {
+          "season": 2024,
+          "label": "within_season",
+          "split": 0.8,
+          "weight": 0.5841005873035536,
+          "games": 280,
+          "log_loss": 0.589539451440754,
+          "brier_score": 0.2022532658712858,
+          "accuracy": 0.6821428571428572,
+          "objective": 0.4220354939979656
+        },
+        {
+          "season": 2025,
+          "label": "prior_seasons",
+          "split": null,
+          "weight": 1,
+          "games": 280,
+          "log_loss": 0.47554109040120424,
+          "brier_score": 0.15622692551496586,
+          "accuracy": 0.7678571428571429,
+          "objective": 0.5500711456183303
+        },
+        {
+          "season": 2025,
+          "label": "within_season",
+          "split": 0.8,
+          "weight": 0.75,
+          "games": 280,
+          "log_loss": 0.5359824258769084,
+          "brier_score": 0.1787348712073714,
+          "accuracy": 0.7535714285714286,
+          "objective": 0.4989040758256032
+        }
+      ]
+    },
+    "params": {
+      "blend_logistic": 0.6063047251068943,
+      "blend_tree": 0.09858969788973516,
+      "blend_rating": 0.2951055770033707,
+      "blend_style": 0,
+      "blend_archetype": 0,
+      "blend_market": 0,
+      "style_scale": 1.273230364989721,
+      "archetype_scale": 1.1283947663280756,
+      "form_scale": 9.121510965548843,
+      "form_trend_scale": 1.046567188586344,
+      "matchup_interaction_scale": 2.1069407681534624,
+      "context_edge_scale": 1.1492302658738733,
+      "quality_win_scale": 5.541839548033223,
+      "bad_loss_scale": 3.5313244054921067,
+      "close_game_scale": 3.7616015140268138,
+      "blowout_scale": 2.019764712920937,
+      "consistency_scale": 0.776963585810582,
+      "fatigue_scale": 5.52369023535622,
+      "travel_scale": 0.8693353643266085,
+      "preseason_shrink_base": 0.4422367306115042,
+      "elo_k_base": 0.1253354185638106,
+      "elo_k_surprise_scale": 1.0527455718370984,
+      "margin_sigma_base": 7.360526940229918,
+      "variance_scale": 1.0452710752838688,
+      "archetype_uncertainty_damp": 0.2774753123526724,
+      "calibration_isotonic_mix": 0.17106093298478192,
+      "uncertainty_confidence_scale": 0.1257979961700654,
+      "shock_base": 0.16162752443112954,
+      "shock_scale": 0.24178912995457744,
+      "home_court_bonus": 0.7248552603272644,
+      "market_power_scale": 1.3656545711563939,
+      "market_prob_shrink": 0.360464123711601,
+      "stacker_mix": 0.17740992281569767,
+      "logistic_lr": 0.10865463277558246,
+      "logistic_lambda": 0.007716869038593699,
+      "logistic_epochs": 873,
+      "tree_stumps": 53
+    }
+  },
+  "best": {
+    "index": 161,
+    "source": "local_p1",
+    "objective": 0.6673616788166976,
+    "objective_weights": {
+      "tournament": 0.52,
+      "regular": 0.48
+    },
+    "tournament": {
+      "objective": 0.8802238082254007,
+      "avg_points": 2892.1264610484263,
+      "avg_normalized": 0.7846957766142076,
+      "avg_actual_winner_prob": 0.5362452720474665,
+      "normalized_stddev": 0.012451466966886756,
+      "seasons_scored": 2,
+      "per_season": [
+        {
+          "season": 2024,
+          "weight": 0.7046880897187134,
+          "points": 2810,
+          "max_points": 3650,
+          "normalized": 0.7698630136986301,
+          "avg_actual_winner_prob": 0.5397613933621395,
+          "actual_slots_scored": 190
+        },
+        {
+          "season": 2025,
+          "weight": 1,
+          "points": 2950,
+          "max_points": 3710,
+          "normalized": 0.7951482479784366,
+          "avg_actual_winner_prob": 0.5337675032350102,
+          "actual_slots_scored": 196
+        }
+      ]
+    },
+    "regular_season": {
+      "objective": 0.436761038623936,
+      "contexts_scored": 3,
+      "games_scored": 840,
+      "avg_log_loss": 0.6104558818745088,
+      "avg_brier_score": 0.2096308861986575,
+      "avg_accuracy": 0.7415703121095579,
+      "by_context": [
+        {
+          "season": 2024,
+          "label": "within_season",
+          "split": 0.8,
+          "weight": 0.5841005873035536,
+          "games": 280,
+          "log_loss": 0.6350927365513817,
+          "brier_score": 0.22149280262787308,
+          "accuracy": 0.7071428571428572,
+          "objective": 0.39998994746015704
+        },
+        {
+          "season": 2025,
+          "label": "prior_seasons",
+          "split": null,
+          "weight": 1,
+          "games": 280,
+          "log_loss": 0.5908468388619988,
+          "brier_score": 0.20030318018510007,
+          "accuracy": 0.7392857142857143,
+          "objective": 0.4511168175089029
+        },
+        {
+          "season": 2025,
+          "label": "within_season",
+          "split": 0.8,
+          "weight": 0.75,
+          "games": 280,
+          "log_loss": 0.6174140708430905,
+          "brier_score": 0.2128297577462668,
+          "accuracy": 0.7714285714285715,
+          "objective": 0.4462573547033878
+        }
+      ]
+    },
+    "params": {
+      "blend_logistic": 0.27247606736644103,
+      "blend_tree": 0.14154443869682856,
+      "blend_rating": 0.09502246665640447,
+      "blend_style": 0.03409420320770141,
+      "blend_archetype": 0.20954746421797865,
+      "blend_market": 0.24731535985464587,
+      "style_scale": 1.5689337219402868,
+      "archetype_scale": 0.6929740876074126,
+      "form_scale": 10.803625171023421,
+      "form_trend_scale": 2.5772454875344444,
+      "matchup_interaction_scale": 0.8782156569532369,
+      "context_edge_scale": 3.2,
+      "quality_win_scale": 2.8348656855349548,
+      "bad_loss_scale": 9,
+      "close_game_scale": 4.364321616145757,
+      "blowout_scale": 2.5263907949727917,
+      "consistency_scale": 2.6961898622443665,
+      "fatigue_scale": 1.1345180970184792,
+      "travel_scale": 0.15475632729573952,
+      "preseason_shrink_base": 0.26665513936088947,
+      "elo_k_base": 0.1391841747785862,
+      "elo_k_surprise_scale": 0.2,
+      "margin_sigma_base": 8.632381696319232,
+      "variance_scale": 0.8556503780583153,
+      "archetype_uncertainty_damp": 0.5170837263071848,
+      "calibration_isotonic_mix": 0.1285212674825273,
+      "uncertainty_confidence_scale": 0.1140503982494589,
+      "shock_base": 0.22218693074224122,
+      "shock_scale": 0.09755291327761628,
+      "home_court_bonus": 0.397713446771621,
+      "market_power_scale": 1.0404881613076418,
+      "market_prob_shrink": 0.27229274908134277,
+      "stacker_mix": 0.17155657857696227,
+      "logistic_lr": 0.05046749245988374,
+      "logistic_lambda": 0.0011074093850575776,
+      "logistic_epochs": 408,
+      "tree_stumps": 37
+    },
+    "rescored_full": true
+  },
+  "leaderboard": [
+    {
+      "rank": 1,
+      "objective": 0.6673616788166976,
+      "tournament_objective": 0.8802238082254007,
+      "regular_objective": 0.436761038623936,
+      "avg_tournament_normalized": 0.7846957766142076,
+      "avg_regular_log_loss": 0.6104558818745088,
+      "avg_regular_accuracy": 0.7415703121095579
+    },
+    {
+      "rank": 2,
+      "objective": 0.6664458801645468,
+      "tournament_objective": 0.8824466014567435,
+      "regular_objective": 0.4324450987646671,
+      "avg_tournament_normalized": 0.7874095106505147,
+      "avg_regular_log_loss": 0.6150687302932757,
+      "avg_regular_accuracy": 0.7401688860746852
+    },
+    {
+      "rank": 3,
+      "objective": 0.6661717112660592,
+      "tournament_objective": 0.8797444280215732,
+      "regular_objective": 0.43480126811425257,
+      "avg_tournament_normalized": 0.7846957766142076,
+      "avg_regular_log_loss": 0.6145139744023885,
+      "avg_regular_accuracy": 0.7439906369018954
+    },
+    {
+      "rank": 4,
+      "objective": 0.6661522627853049,
+      "tournament_objective": 0.8823680841082728,
+      "regular_objective": 0.43191845635208975,
+      "avg_tournament_normalized": 0.7874095106505147,
+      "avg_regular_log_loss": 0.615329494967162,
+      "avg_regular_accuracy": 0.7395289926477605
+    },
+    {
+      "rank": 5,
+      "objective": 0.6661291002614049,
+      "tournament_objective": 0.8824114667904392,
+      "regular_objective": 0.4318232031882845,
+      "avg_tournament_normalized": 0.7874095106505147,
+      "avg_regular_log_loss": 0.615449326747539,
+      "avg_regular_accuracy": 0.7395289926477605
+    },
+    {
+      "rank": 6,
+      "objective": 0.6659240780671849,
+      "tournament_objective": 0.8812118331655397,
+      "regular_objective": 0.4326956767106339,
+      "avg_tournament_normalized": 0.7862769560722059,
+      "avg_regular_log_loss": 0.6150728797447945,
+      "avg_regular_accuracy": 0.7406765744799839
+    },
+    {
+      "rank": 7,
+      "objective": 0.6659236840346907,
+      "tournament_objective": 0.8812155181406923,
+      "regular_objective": 0.432690863753189,
+      "avg_tournament_normalized": 0.7862769560722059,
+      "avg_regular_log_loss": 0.6150789359084312,
+      "avg_regular_accuracy": 0.7406765744799839
+    },
+    {
+      "rank": 8,
+      "objective": 0.6659220658058114,
+      "tournament_objective": 0.881213899815293,
+      "regular_objective": 0.43268924562887295,
+      "avg_tournament_normalized": 0.7862769560722059,
+      "avg_regular_log_loss": 0.6150809096165715,
+      "avg_regular_accuracy": 0.7406765744799839
+    },
+    {
+      "rank": 9,
+      "objective": 0.665873446595896,
+      "tournament_objective": 0.8799647789968291,
+      "regular_objective": 0.43394116982821823,
+      "avg_tournament_normalized": 0.7851444014938973,
+      "avg_regular_log_loss": 0.6150310100224357,
+      "avg_regular_accuracy": 0.7431004212191891
+    },
+    {
+      "rank": 10,
+      "objective": 0.6656836304279095,
+      "tournament_objective": 0.8819960907112453,
+      "regular_objective": 0.43134513178762907,
+      "avg_tournament_normalized": 0.7869608857708251,
+      "avg_regular_log_loss": 0.6176153822243818,
+      "avg_regular_accuracy": 0.7419528393869657
+    }
+  ]
+}

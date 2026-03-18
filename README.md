@@ -89,16 +89,175 @@ At runtime, `docs/live-runtime.js`:
 
 - Runtime backtest harness runs walk-forward holdout seasons and scores by ESPN-style round points.
 - Holdout training uses pre-tournament data only for each season (filters out NCAA tournament rounds when present).
-- Random-search tuning optimizes objective = normalized bracket score + actual-winner probability - stability penalty across seasons.
+- Adaptive tuning search (random -> refine -> crossover -> CEM -> local search) optimizes objective = normalized bracket score + actual-winner probability - stability penalty across seasons.
 - Seed/rank is excluded from matchup model features and tie-break scoring (performance metrics only).
+- Home-court context is modeled for non-neutral games in game-level backtests and calibration.
 - Tuned params are cached in browser local storage to avoid rerunning every refresh.
 - Configure behavior in `docs/data/runtime/config.json` under:
   - `model_params`
   - `model_tuning`
   - `model_tuning.holdout_max_seasons`
   - `model_tuning.season_recency_decay`
-  - `model_tuning.objective_actual_prob_weight`
-  - `model_tuning.objective_stability_penalty`
+- `model_tuning.objective_actual_prob_weight`
+- `model_tuning.objective_stability_penalty`
+
+## Full D1 Data Generation
+
+Build a full Division I historical dataset (all final games per season window) and regenerate runtime CSVs:
+
+```bash
+node scripts/build_d1_runtime_data.js \
+  --target-season 2026 \
+  --from-season 2018 \
+  --to-season 2026 \
+  --market-lines
+```
+
+What this script does:
+
+- Pulls all finalized D1 games from ESPN scoreboard day-by-day.
+- Pulls season team-stat profiles from ESPN team statistics endpoints.
+- Optionally enriches each game with market priors from ESPN `pickcenter` (`market_prob_a`, `market_spread_a`, moneylines).
+- Computes derived team ratings/features and writes:
+  - `data/raw/<target-season>/team_stats.csv`
+  - `data/raw/<target-season>/historical_games.csv`
+  - `docs/data/runtime/<target-season>/team_stats.csv`
+  - `docs/data/runtime/<target-season>/historical_games.csv`
+- Stores generation metadata in `data/generated/<target-season>/full_d1_generation_report.json`.
+
+Useful flags:
+
+- `--exclude-postseason`
+- `--no-market-lines`
+- `--cache-file data/generated/2026/summary_market_cache.json`
+- `--skip-cache`
+- `--day-concurrency 8`
+- `--summary-concurrency 10`
+- `--team-stats-concurrency 12`
+- `--progress-every 100`
+
+## Full Benchmark Runner (CLI)
+
+Run a full parameter benchmark + autotune from terminal:
+
+```bash
+node scripts/benchmark.js --season 2026 --out data/generated/2026/full_benchmark.json --apply-best
+```
+
+What it evaluates:
+
+- Tournament holdout seasons (ESPN bracket scoring objective)
+- Game-level prediction backtests (regular season + postseason by default):
+  - prior-seasons -> full holdout season
+  - within-season splits (train early games, predict later games)
+
+Useful flags:
+
+- `--holdout-seasons all`
+- `--regular-max-seasons all`
+- `--splits 0.65,0.8,0.9`
+- `--regular-min-train-games 160`
+- `--regular-min-test-games 30`
+- `--fast-models` / `--full-models`
+- `--full-rescore-top-k 4`
+- `--tournament-source historical_games`
+- `--tournament-context-limit 2`
+- `--tournament-train-game-cap 1800`
+- `--regular-context-limit 3`
+- `--regular-train-game-cap 1800`
+- `--regular-test-game-cap 280`
+- `--exclude-postseason` (if you want regular-season-only game backtests)
+- `--refine-rounds 1`
+- `--refine-top-k 6`
+- `--refine-per-top 8`
+- `--crossover-rounds 1`
+- `--crossover-top-k 8`
+- `--crossover-children 10`
+- `--cem-rounds 2`
+- `--cem-samples 40`
+- `--cem-elite-fraction 0.16`
+- `--cem-explore-floor 0.12`
+- `--local-search-passes 1`
+- `--local-search-step-start 0.12`
+- `--local-search-max-candidates 90`
+- `--phase-stagnation-patience 2`
+- `--phase-stagnation-min-gain 0.00006`
+- `--early-stop-patience 120`
+- `--early-stop-min-improvement 0.00004`
+- `--early-stop-min-fraction 0.35`
+- `--no-early-stop`
+- `--progress-every 10` (live counter/progress updates)
+- `--no-progress` (quiet mode)
+- `--accuracy-priority` (bias regular-game objective toward accuracy)
+- `--tournament-weight 0.62`
+- `--regular-weight 0.38`
+- `--skip-tournament` (regular-season-only optimization)
+- `--skip-regular` (tournament-only optimization)
+- `--apply-best` (writes best params to `docs/data/runtime/config.json` -> `model_params`)
+
+Deep search on full D1 data (fast-screen search + full-fidelity top-K rescore):
+
+```bash
+node scripts/benchmark.js \
+  --season 2026 \
+  --holdout-seasons all \
+  --regular-max-seasons all \
+  --trials 180 \
+  --splits 0.8 \
+  --regular-min-train-games 650 \
+  --regular-min-test-games 180 \
+  --refine-rounds 1 \
+  --refine-top-k 8 \
+  --refine-per-top 10 \
+  --refine-scale-start 0.34 \
+  --refine-scale-decay 0.62 \
+  --crossover-rounds 1 \
+  --crossover-top-k 8 \
+  --crossover-children 12 \
+  --crossover-noise-scale 0.10 \
+  --cem-rounds 3 \
+  --cem-samples 56 \
+  --cem-elite-fraction 0.16 \
+  --cem-explore-floor 0.12 \
+  --cem-spread-decay 0.80 \
+  --cem-spread-min 0.02 \
+  --cem-spread-max 0.40 \
+  --local-search-passes 1 \
+  --local-search-step-start 0.12 \
+  --local-search-step-decay 0.62 \
+  --local-search-min-step 0.02 \
+  --local-search-max-candidates 140 \
+  --phase-stagnation-patience 1 \
+  --phase-stagnation-min-gain 0.00004 \
+  --early-stop-patience 180 \
+  --early-stop-min-improvement 0.00004 \
+  --early-stop-min-fraction 0.35 \
+  --fast-models \
+  --full-rescore-top-k 10 \
+  --tournament-source historical_games \
+  --tournament-context-limit 2 \
+  --tournament-train-game-cap 1800 \
+  --regular-context-limit 3 \
+  --regular-train-game-cap 1800 \
+  --regular-test-game-cap 280 \
+  --regular-objective-logloss-weight 0.35 \
+  --regular-objective-brier-weight 0.15 \
+  --regular-objective-accuracy-weight 0.50 \
+  --progress-every 2 \
+  --tournament-weight 0.52 \
+  --regular-weight 0.48 \
+  --random-seed 20260318 \
+  --out data/generated/2026/full_benchmark_long.json \
+  --apply-best
+```
+
+If you want full-fidelity scoring for every candidate (much slower), add `--full-models --full-rescore-top-k 0`.
+
+Quick tuned run (good first pass before long run):
+
+```bash
+node scripts/benchmark.js --season 2026 --trials 70 --out data/generated/2026/full_benchmark_quick.json --apply-best
+```
 
 ## Raw data files
 
@@ -129,6 +288,16 @@ Recommended numeric columns:
 - `drb_pct`
 - `ft_rate`
 
+Additional optional columns (used when present):
+
+- `ast_rate`
+- `stl_rate`
+- `blk_rate`
+- `three_rate`
+- `opp_three_rate`
+- `opp_fg3_pct`
+- `opp_ft_rate`
+
 ### `historical_games.csv`
 
 Required columns:
@@ -144,6 +313,15 @@ Optional:
 - `neutral_site`
 - `game_date`
 - `round_name`
+- `home_team` or `home_edge_a`
+- `rest_days_a`, `rest_days_b`
+- `travel_distance_a`, `travel_distance_b`
+- `injuries_impact_a`, `injuries_impact_b`
+- `market_prob_a` / `market_prob_b`
+- `market_spread_a` / `market_spread_b` (or `closing_spread_a` / `closing_spread_b`)
+- `moneyline_a` / `moneyline_b`
+
+If market columns are present, the runtime automatically incorporates them as priors and matchup context.
 
 ### `injuries.csv` (optional)
 

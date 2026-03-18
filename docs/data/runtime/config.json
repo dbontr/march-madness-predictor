@@ -2,15 +2,43 @@
   "default_season": 2026,
   "default_simulations": 0,
   "model_params": {
-    "blend_logistic": 0.31,
-    "blend_tree": 0.23,
-    "blend_rating": 0.35,
-    "blend_style": 0.11,
-    "style_scale": 0.9,
-    "form_scale": 6.2,
-    "uncertainty_confidence_scale": 0.34,
-    "shock_base": 0.08,
-    "shock_scale": 0.22
+    "blend_logistic": 0.45211583865067856,
+    "blend_tree": 0.13405681617310833,
+    "blend_rating": 0.23797441922549623,
+    "blend_style": 0.060290527939843165,
+    "blend_archetype": 0.008680633280651604,
+    "blend_market": 0.10688176473022219,
+    "style_scale": 1.073564089350383,
+    "archetype_scale": 1.0610513562491997,
+    "form_scale": 8.203473679986795,
+    "form_trend_scale": 1.6550656787362619,
+    "matchup_interaction_scale": 1.4369287448499324,
+    "context_edge_scale": 0.9712638998551729,
+    "quality_win_scale": 4.710513765650305,
+    "bad_loss_scale": 4.534088532464766,
+    "close_game_scale": 2.887562996580548,
+    "blowout_scale": 2.0441575994380705,
+    "consistency_scale": 1.8878129132754369,
+    "fatigue_scale": 4.156357675178513,
+    "travel_scale": 0.7939091334952103,
+    "preseason_shrink_base": 0.3858073944417981,
+    "elo_k_base": 0.1482962639400727,
+    "elo_k_surprise_scale": 1.4381145259072081,
+    "margin_sigma_base": 6.798994364399442,
+    "variance_scale": 1.0216384176606261,
+    "archetype_uncertainty_damp": 0.338054531390396,
+    "calibration_isotonic_mix": 0.18420071663357773,
+    "uncertainty_confidence_scale": 0.1222525484568561,
+    "shock_base": 0.16049073929030086,
+    "shock_scale": 0.24580870395172424,
+    "home_court_bonus": 0.6850193210284291,
+    "market_power_scale": 1.614183889947941,
+    "market_prob_shrink": 0.4775787480292947,
+    "stacker_mix": 0.32435405899566827,
+    "logistic_lr": 0.11540168362561834,
+    "logistic_lambda": 0.007242098858994603,
+    "logistic_epochs": 771,
+    "tree_stumps": 56
   },
   "model_tuning": {
     "enabled": true,
@@ -22,6 +50,57 @@
     "objective_stability_penalty": 0.08,
     "random_seed": 9337
   },
+  "benchmark": {
+    "holdout_max_seasons": "all",
+    "regular_max_seasons": "all",
+    "regular_split_fractions": [
+      0.8
+    ],
+    "regular_min_train_games": 650,
+    "regular_min_test_games": 180,
+    "trials": 80,
+    "refine_rounds": 1,
+    "refine_top_k": 5,
+    "refine_per_top": 6,
+    "refine_scale_start": 0.34,
+    "refine_scale_decay": 0.62,
+    "crossover_rounds": 1,
+    "crossover_top_k": 6,
+    "crossover_children": 8,
+    "crossover_noise_scale": 0.1,
+    "cem_rounds": 2,
+    "cem_samples": 32,
+    "cem_elite_fraction": 0.16,
+    "cem_explore_floor": 0.12,
+    "cem_spread_decay": 0.8,
+    "cem_spread_min": 0.02,
+    "cem_spread_max": 0.4,
+    "local_search_passes": 1,
+    "local_search_step_start": 0.12,
+    "local_search_step_decay": 0.62,
+    "local_search_min_step": 0.02,
+    "local_search_max_candidates": 60,
+    "phase_stagnation_patience": 1,
+    "phase_stagnation_min_gain": 0.00004,
+    "early_stop_patience": 120,
+    "early_stop_min_improvement": 0.00004,
+    "early_stop_min_fraction": 0.35,
+    "fast_models": true,
+    "full_rescore_top_k": 4,
+    "tournament_source": "historical_games",
+    "tournament_context_limit": 2,
+    "tournament_train_game_cap": 1800,
+    "regular_context_limit": 3,
+    "regular_train_game_cap": 1800,
+    "regular_test_game_cap": 280,
+    "regular_objective_logloss_weight": 0.35,
+    "regular_objective_brier_weight": 0.15,
+    "regular_objective_accuracy_weight": 0.5,
+    "tournament_weight": 0.52,
+    "regular_weight": 0.48,
+    "progress_every": 2,
+    "random_seed": 20260318
+  },
   "tournament_windows": {
     "2026": {
       "first_four_start": "2026-03-17",
@@ -30,8 +109,14 @@
   },
   "final_four_pairs": {
     "2026": [
-      ["EAST", "SOUTH"],
-      ["WEST", "MIDWEST"]
+      [
+        "EAST",
+        "SOUTH"
+      ],
+      [
+        "WEST",
+        "MIDWEST"
+      ]
     ]
   }
 }
