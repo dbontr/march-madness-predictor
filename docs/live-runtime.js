@@ -68,10 +68,10 @@
     preseason_shrink_base: 0.34,
     elo_k_base: 0.095,
     elo_k_surprise_scale: 1.35,
-    margin_sigma_base: 9.4,
-    variance_scale: 1.0,
+    margin_sigma_base: 7.4,
+    variance_scale: 0.78,
     archetype_uncertainty_damp: 0.55,
-    calibration_isotonic_mix: 0.3,
+    calibration_isotonic_mix: 0.12,
     uncertainty_confidence_scale: 0.34,
     shock_base: 0.08,
     shock_scale: 0.22,
@@ -1033,10 +1033,10 @@
       preseason_shrink_base: clampNumber(base.preseason_shrink_base, 0.08, 0.7),
       elo_k_base: clampNumber(base.elo_k_base, 0.02, 0.24),
       elo_k_surprise_scale: clampNumber(base.elo_k_surprise_scale, 0.2, 2.8),
-      margin_sigma_base: clampNumber(base.margin_sigma_base, 5, 18),
-      variance_scale: clampNumber(base.variance_scale, 0.6, 1.8),
+      margin_sigma_base: clampNumber(base.margin_sigma_base, 4.8, 13),
+      variance_scale: clampNumber(base.variance_scale, 0.45, 1.3),
       archetype_uncertainty_damp: clampNumber(base.archetype_uncertainty_damp, 0, 1),
-      calibration_isotonic_mix: clampNumber(base.calibration_isotonic_mix, 0, 0.7),
+      calibration_isotonic_mix: clampNumber(base.calibration_isotonic_mix, 0, 0.45),
       uncertainty_confidence_scale: clampNumber(base.uncertainty_confidence_scale, 0.08, 0.75),
       shock_base: clampNumber(base.shock_base, 0.03, 0.25),
       shock_scale: clampNumber(base.shock_scale, 0.05, 0.45),
@@ -2018,8 +2018,10 @@
         sqErr += w * err * err;
       }
       const rmse = Math.sqrt(sqErr / Math.max(wSum, 1e-9));
-      const sigma = Math.sqrt(rmse * rmse + 0.24 * baseSigma * baseSigma) * finiteOr(tuning.variance_scale, 1);
-      out.set(key, clampNumber(sigma, 5.5, 22));
+      const sigma =
+        (0.54 * rmse + 0.46 * baseSigma) *
+        finiteOr(tuning.variance_scale, 1);
+      out.set(key, clampNumber(sigma, 4.8, 15.8));
     }
     return out;
   }
@@ -2139,7 +2141,11 @@
         const expectedMargin = (offSelf + defSelf) - (offOpp + defOpp);
         const sigmaSelf = varianceByTeam.get(key) ?? tuning.margin_sigma_base;
         const sigmaOpp = varianceByTeam.get(g.oppKey) ?? tuning.margin_sigma_base;
-        const sigma = Math.sqrt(sigmaSelf * sigmaSelf + sigmaOpp * sigmaOpp + tuning.margin_sigma_base * tuning.margin_sigma_base);
+        const sigma = Math.sqrt(
+          0.34 * sigmaSelf * sigmaSelf +
+          0.34 * sigmaOpp * sigmaOpp +
+          0.32 * tuning.margin_sigma_base * tuning.margin_sigma_base,
+        );
         const expected = normalCdf(expectedMargin / Math.max(1e-6, sigma));
         const err = g.outcomeSoft - expected;
         const w = g.weight;
@@ -2223,9 +2229,9 @@
     const sigmaA = finiteOr(performanceStyle?.marginSigmaBySeasonTeam?.get(keyA), tuning.margin_sigma_base);
     const sigmaB = finiteOr(performanceStyle?.marginSigmaBySeasonTeam?.get(keyB), tuning.margin_sigma_base);
     const matchupSigma = Math.sqrt(
-      sigmaA * sigmaA +
-      sigmaB * sigmaB +
-      tuning.margin_sigma_base * tuning.margin_sigma_base,
+      0.34 * sigmaA * sigmaA +
+      0.34 * sigmaB * sigmaB +
+      0.32 * tuning.margin_sigma_base * tuning.margin_sigma_base,
     );
     const performanceProb = clampProb(normalCdf(contextualMargin / Math.max(1e-6, matchupSigma)));
 
@@ -2350,7 +2356,7 @@
     }
     const platt = fitPlattCalibratorRows(rows);
     const isotonic = fitIsotonicCalibratorRows(rows);
-    const baseMix = clampNumber(finiteOr(tuning.calibration_isotonic_mix, 0.3), 0, 0.7);
+    const baseMix = clampNumber(finiteOr(tuning.calibration_isotonic_mix, 0.12), 0, 0.45);
     const sampleScale = clampNumber(1 - 40 / (rows.length + 80), 0.18, 1);
     return {
       alpha: platt.alpha,
@@ -2418,12 +2424,12 @@
     const late = calibration.late || calibration.global;
     const difficulty = 1 - Math.abs(baseProb - 0.5) * 2;
 
-    if (roundOrder >= 5) return { ...late, iso_mix: clampNumber(finiteOr(late.iso_mix, 0), 0, 0.7) };
-    if (roundOrder <= 2) return { ...early, iso_mix: clampNumber(finiteOr(early.iso_mix, 0), 0, 0.7) };
+    if (roundOrder >= 5) return { ...late, iso_mix: clampNumber(finiteOr(late.iso_mix, 0), 0, 0.45) };
+    if (roundOrder <= 2) return { ...early, iso_mix: clampNumber(finiteOr(early.iso_mix, 0), 0, 0.45) };
     const lateWeight = roundOrder >= 4 ? 0.75 + 0.2 * difficulty : 0.45 + 0.35 * difficulty;
     const w = clampNumber(lateWeight, 0, 1);
     const isoSource = w >= 0.5 ? late : early;
-    const isoMix = clampNumber(finiteOr(tuning.calibration_isotonic_mix, 0.3), 0, 0.7);
+    const isoMix = clampNumber(finiteOr(tuning.calibration_isotonic_mix, 0.12), 0, 0.45);
     return {
       alpha: early.alpha * (1 - w) + late.alpha * w,
       beta: early.beta * (1 - w) + late.beta * w,
@@ -3015,10 +3021,10 @@
       preseason_shrink_base: 0.12 + 0.5 * rng.next(),
       elo_k_base: 0.035 + 0.17 * rng.next(),
       elo_k_surprise_scale: 0.35 + 2.1 * rng.next(),
-      margin_sigma_base: 6 + 9 * rng.next(),
-      variance_scale: 0.7 + 0.9 * rng.next(),
+      margin_sigma_base: 5.4 + 6.4 * rng.next(),
+      variance_scale: 0.52 + 0.56 * rng.next(),
       archetype_uncertainty_damp: 0.15 + 0.75 * rng.next(),
-      calibration_isotonic_mix: 0.05 + 0.55 * rng.next(),
+      calibration_isotonic_mix: 0.02 + 0.26 * rng.next(),
       uncertainty_confidence_scale: 0.16 + 0.5 * rng.next(),
       shock_base: 0.05 + 0.14 * rng.next(),
       shock_scale: 0.08 + 0.3 * rng.next(),
@@ -3071,7 +3077,7 @@
     const avgNorm = normTotal / scored;
     const avgEntropy = entropyTotal / scored;
     return {
-      objective: avgNorm + 0.05 * avgEntropy,
+      objective: avgNorm - 0.012 * avgEntropy,
       avg_points: pointsTotal / scored,
       avg_normalized: avgNorm,
       avg_champion_entropy: avgEntropy,
@@ -3093,7 +3099,7 @@
 
     const fingerprint = dataFingerprint(teamStats, historical);
     const cacheHours = clampNumber(finiteOr(tuningCfg.cache_hours, 18), 1, 240);
-    const cacheKey = `mmp:tuning:v4:${season}:${fingerprint}`;
+    const cacheKey = `mmp:tuning:v5:${season}:${fingerprint}`;
     const cached = safeReadLocalStorageJson(cacheKey);
     const now = Date.now();
     if (cached && isFiniteNumber(cached.created_at) && (now - cached.created_at) < cacheHours * 3600 * 1000) {
