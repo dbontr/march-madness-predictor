@@ -5735,6 +5735,29 @@
     };
   }
 
+  function selectLiveTrainingGames(historical, targetSeason, liveCfg = {}) {
+    const maxSeasons = Math.round(clampNumber(finiteOr(liveCfg.max_seasons, 5), 1, 20));
+    const gameCap = Math.round(clampNumber(finiteOr(liveCfg.game_cap, 2600), 200, 50000));
+    const includePostseason = liveCfg.include_postseason !== false;
+
+    const seasons = [...new Set((historical || []).map((row) => Number(row.season)))]
+      .filter((season) => isFiniteNumber(season) && season <= targetSeason)
+      .sort((a, b) => a - b)
+      .slice(-maxSeasons);
+    const seasonSet = new Set(seasons);
+
+    const filtered = (historical || [])
+      .filter((game) => seasonSet.has(Number(game.season)))
+      .filter((game) => includePostseason || !isLikelyPostseasonRoundName(game?.round_name))
+      .sort((a, b) => {
+        const sa = Number(a.season || 0);
+        const sb = Number(b.season || 0);
+        if (sa !== sb) return sa - sb;
+        return Number(a.game_index || 0) - Number(b.game_index || 0);
+      });
+    return capRowsEvenly(filtered, gameCap);
+  }
+
   function pickWindow(config, season) {
     const windows = (config && config.tournament_windows) || {};
     const key = String(season);
@@ -5758,6 +5781,7 @@
     const config = await fetchJson("./data/runtime/config.json").catch(() => ({}));
 
     const season = Number(options.season || config.default_season || new Date().getUTCFullYear());
+    const liveCfg = config?.live_runtime || {};
 
     const { teamStats, historical, injuries, aliasMap, quality_report: qualityReport } = await loadRuntimeData(season);
     const adjustedTeamStats = applyInjuries(teamStats, injuries, season);
@@ -5765,13 +5789,19 @@
 
     const tuningResult = await resolveTuningParams(config, adjustedTeamStats, historical, aliasMap, season);
     const tunedParams = normalizeTuningParams(tuningResult.params || {});
+    const liveFastModels = liveCfg.fast_models !== false;
+    const liveTrainingGames = selectLiveTrainingGames(historical, season, liveCfg);
+    const trainingGames = liveTrainingGames.length ? liveTrainingGames : historical;
+    const liveParams = benchmarkModelParams(tunedParams, liveFastModels);
 
-    const model = trainModel(adjustedTeamStats, historical, tunedParams);
-    const performanceStyle = buildPerformanceStyleContext(adjustedTeamStats, historical, tunedParams);
-    performanceStyle.tuning = tunedParams;
-    performanceStyle.treeModel = trainTreeModel(adjustedTeamStats, historical, tunedParams);
-    performanceStyle.stacker = trainBlendStacker(adjustedTeamStats, historical, model, performanceStyle);
-    performanceStyle.calibrator = fitProbabilityCalibrator(adjustedTeamStats, historical, model, performanceStyle);
+    const model = trainModel(adjustedTeamStats, trainingGames, liveParams);
+    const performanceStyle = buildPerformanceStyleContext(adjustedTeamStats, trainingGames, liveParams);
+    performanceStyle.tuning = liveParams;
+    if (!liveFastModels) {
+      performanceStyle.treeModel = trainTreeModel(adjustedTeamStats, trainingGames, liveParams);
+      performanceStyle.stacker = trainBlendStacker(adjustedTeamStats, trainingGames, model, performanceStyle);
+      performanceStyle.calibrator = fitProbabilityCalibrator(adjustedTeamStats, trainingGames, model, performanceStyle);
+    }
 
     const window = pickWindow(config, season);
     const firstFourStart = window.first_four_start;
@@ -5862,6 +5892,10 @@
           mean_team_margin_sigma: meanTeamSigma,
           off_def_rated_teams: performanceStyle.offenseRatingBySeasonTeam?.size || 0,
           market_training_rows: performanceStyle.market_rows || 0,
+          live_fast_models: liveFastModels,
+          live_training_games: trainingGames.length,
+          live_training_max_seasons: Math.round(clampNumber(finiteOr(liveCfg.max_seasons, 5), 1, 20)),
+          live_training_game_cap: Math.round(clampNumber(finiteOr(liveCfg.game_cap, 2600), 200, 50000)),
         },
         model_tuning: {
           source: tuningResult.source,

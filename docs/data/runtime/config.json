@@ -41,7 +41,7 @@
     "tree_stumps": 56
   },
   "model_tuning": {
-    "enabled": true,
+    "enabled": false,
     "trials": 32,
     "cache_hours": 18,
     "holdout_max_seasons": 6,
@@ -49,6 +49,12 @@
     "objective_actual_prob_weight": 0.18,
     "objective_stability_penalty": 0.08,
     "random_seed": 9337
+  },
+  "live_runtime": {
+    "fast_models": true,
+    "max_seasons": 5,
+    "game_cap": 2600,
+    "include_postseason": true
   },
   "benchmark": {
     "holdout_max_seasons": "all",

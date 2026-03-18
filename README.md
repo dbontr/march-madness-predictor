@@ -100,6 +100,11 @@ At runtime, `docs/live-runtime.js`:
   - `model_tuning.season_recency_decay`
 - `model_tuning.objective_actual_prob_weight`
 - `model_tuning.objective_stability_penalty`
+  - `live_runtime.fast_models`
+  - `live_runtime.max_seasons`
+  - `live_runtime.game_cap`
+
+For GitHub Pages stability, keep `model_tuning.enabled` set to `false` and use `model_params` from your latest benchmark run.
 
 ## Full D1 Data Generation
 

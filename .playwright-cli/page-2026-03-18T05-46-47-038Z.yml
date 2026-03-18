@@ -1,0 +1,32 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: march madness predictor
+      - heading "dbontr bracket oracle" [level=1] [ref=e6]
+      - paragraph [ref=e7]: Live predictions computed in-browser from ESPN data on every page load.
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - text: season
+        - strong [ref=e10]: "-"
+      - generic [ref=e11]:
+        - text: mode
+        - strong [ref=e12]: "-"
+      - generic [ref=e13]:
+        - text: updated
+        - strong [ref=e14]: "-"
+  - generic [ref=e15]:
+    - searchbox "Filter team or slot" [ref=e16]
+    - button "Reload data" [ref=e17] [cursor=pointer]
+    - button "Clear filter" [ref=e18] [cursor=pointer]
+  - generic [ref=e19]:
+    - complementary [ref=e20]:
+      - generic [ref=e21]:
+        - generic [ref=e22]: Projected Champion
+        - generic [ref=e23]:
+          - generic [ref=e24]: "-"
+          - generic [ref=e25]: championship pick from the bracket path
+      - generic [ref=e27]: Title Odds
+    - generic [ref=e28]:
+      - generic [ref=e29]: Bracket Tree
+      - generic [ref=e30]: Mirrored left/right bracket with a combined Final Four + Final center lane.
+  - generic [ref=e33]: "GitHub Pages runtime: browser-side model + ESPN data, no backend required"
