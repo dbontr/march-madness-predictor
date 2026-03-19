@@ -75,6 +75,9 @@
     matchup_interaction_scale: 0.62,
     context_edge_scale: 1.0,
     quality_win_scale: 4.2,
+    elite_win_scale: 3.1,
+    elite_win_min_opp_strength: 0.7,
+    elite_win_upset_scale: 1.15,
     bad_loss_scale: 4.9,
     close_game_scale: 2.6,
     blowout_scale: 1.8,
@@ -122,6 +125,9 @@
     matchup_interaction_scale: { min: 0, max: 3.2, integer: false },
     context_edge_scale: { min: 0, max: 3.2, integer: false },
     quality_win_scale: { min: 0, max: 9, integer: false },
+    elite_win_scale: { min: 0, max: 8, integer: false },
+    elite_win_min_opp_strength: { min: 0.55, max: 0.9, integer: false },
+    elite_win_upset_scale: { min: 0, max: 2.5, integer: false },
     bad_loss_scale: { min: 0, max: 9, integer: false },
     close_game_scale: { min: 0, max: 6, integer: false },
     blowout_scale: { min: 0, max: 5, integer: false },
@@ -2318,13 +2324,24 @@
     return clampNumber(scaled * reliability * clampNumber(uncertaintyDamp, 0.25, 1), -0.32, 0.32);
   }
 
-  function computeQualityProfileByTeam(gamesByTeam, ratingByTeam, baseRating, baseMean) {
+  function computeQualityProfileByTeam(gamesByTeam, ratingByTeam, baseRating, baseMean, tuning = DEFAULT_TUNING) {
     const out = new Map();
+    const eliteThreshold = clampNumber(
+      finiteOr(tuning?.elite_win_min_opp_strength, DEFAULT_TUNING.elite_win_min_opp_strength),
+      0.5,
+      0.95,
+    );
+    const eliteUpsetScale = clampNumber(
+      finiteOr(tuning?.elite_win_upset_scale, DEFAULT_TUNING.elite_win_upset_scale),
+      0,
+      3,
+    );
 
     for (const [key, teamGames] of gamesByTeam.entries()) {
       if (!teamGames.length) {
         out.set(key, {
           quality_win: 0,
+          elite_win: 0,
           bad_loss: 0,
           close_resilience: 0,
           blowout_dominance: 0,
@@ -2337,6 +2354,7 @@
       const selfRating = ratingByTeam.get(key) ?? baseRating.get(key) ?? baseMean;
       let weightTotal = 0;
       let qualityWin = 0;
+      let eliteWin = 0;
       let badLoss = 0;
       let closeResilience = 0;
       let blowoutDominance = 0;
@@ -2349,6 +2367,11 @@
         const surprise = g.outcomeSoft - expected;
         const oppStrength = sigmoid((oppRating - baseMean) / 9.5);
         const weakOpp = 1 - oppStrength;
+        const eliteStrength = clampNumber(
+          (oppStrength - eliteThreshold) / Math.max(1e-9, 1 - eliteThreshold),
+          0,
+          1,
+        );
         const winShare = Math.max(0, g.outcomeSoft - 0.5) * 2;
         const lossShare = Math.max(0, 0.5 - g.outcomeSoft) * 2;
         const marginAbs = Math.abs(g.adjustedMargin);
@@ -2357,6 +2380,12 @@
         const weight = g.weight;
 
         qualityWin += weight * (winShare ** 1.35) * (oppStrength ** 1.4);
+        eliteWin +=
+          weight *
+          (winShare ** 1.2) *
+          (eliteStrength ** 1.95) *
+          (1 + eliteUpsetScale * Math.max(0, surprise)) *
+          (0.85 + 0.15 * Math.max(0, Math.tanh(g.adjustedMargin / 12)));
         badLoss += weight * (lossShare ** 1.45) * (weakOpp ** 1.5);
         closeResilience += weight * closeSignal * (0.72 * surprise + 0.28 * (oppStrength - 0.5));
         blowoutDominance += weight * blowoutSignal * Math.sign(g.adjustedMargin) * (0.45 + 0.55 * oppStrength);
@@ -2368,6 +2397,7 @@
       if (weightTotal <= 1e-9) {
         out.set(key, {
           quality_win: 0,
+          elite_win: 0,
           bad_loss: 0,
           close_resilience: 0,
           blowout_dominance: 0,
@@ -2383,6 +2413,7 @@
 
       out.set(key, {
         quality_win: qualityWin / weightTotal,
+        elite_win: eliteWin / weightTotal,
         bad_loss: badLoss / weightTotal,
         close_resilience: closeResilience / weightTotal,
         blowout_dominance: blowoutDominance / weightTotal,
@@ -2907,7 +2938,7 @@
       offDef.gamesPlayedBySeasonTeam,
       tuning,
     );
-    const qualityByTeam = computeQualityProfileByTeam(gamesByTeam, rating, baseRating, baseMean);
+    const qualityByTeam = computeQualityProfileByTeam(gamesByTeam, rating, baseRating, baseMean, tuning);
 
     return {
       tuning,
@@ -2995,12 +3026,14 @@
     const qualityAdjA =
       tuning.quality_win_scale * finiteOr(qualityA.quality_win, 0) -
       tuning.bad_loss_scale * finiteOr(qualityA.bad_loss, 0) +
+      tuning.elite_win_scale * finiteOr(qualityA.elite_win, 0) +
       tuning.close_game_scale * finiteOr(qualityA.close_resilience, 0) +
       tuning.blowout_scale * finiteOr(qualityA.blowout_dominance, 0) +
       tuning.consistency_scale * (finiteOr(qualityA.consistency, 0.5) - 0.5);
     const qualityAdjB =
       tuning.quality_win_scale * finiteOr(qualityB.quality_win, 0) -
       tuning.bad_loss_scale * finiteOr(qualityB.bad_loss, 0) +
+      tuning.elite_win_scale * finiteOr(qualityB.elite_win, 0) +
       tuning.close_game_scale * finiteOr(qualityB.close_resilience, 0) +
       tuning.blowout_scale * finiteOr(qualityB.blowout_dominance, 0) +
       tuning.consistency_scale * (finiteOr(qualityB.consistency, 0.5) - 0.5);
@@ -4273,6 +4306,9 @@
       matchup_interaction_scale: 0.2 + 2.8 * rng.next(),
       context_edge_scale: 0.2 + 2.8 * rng.next(),
       quality_win_scale: 1 + 7 * rng.next(),
+      elite_win_scale: 0.4 + 5.8 * rng.next(),
+      elite_win_min_opp_strength: 0.58 + 0.26 * rng.next(),
+      elite_win_upset_scale: 0.1 + 1.8 * rng.next(),
       bad_loss_scale: 1 + 7 * rng.next(),
       close_game_scale: 0.4 + 4.2 * rng.next(),
       blowout_scale: 0.2 + 3.2 * rng.next(),
@@ -6963,6 +6999,7 @@
         latent_matchup_embeddings: true,
         rolling_form_last5_last10: true,
         quality_win_bad_loss_profile: true,
+        elite_strong_opponent_win_bonus: true,
         close_game_resilience_profile: true,
         nonlinear_quality_scaling: true,
         close_vs_blowout_separation: true,
