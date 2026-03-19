@@ -86,6 +86,13 @@ Options:
   --regular-robust-downside-quantile <n>
                                       Regular downside quantile level (0.01-0.5)
   --accuracy-priority                 Shortcut: emphasize regular-game accuracy in objective
+  --objective-mode <mode>             weighted|tournament_priority|tournament_only
+  --tournament-priority-regular-weight <n>
+                                      In tournament_priority mode, small regular objective tie-break weight
+  --tournament-priority-regular-floor <n>
+                                      Soft floor for regular objective in tournament-first modes
+  --tournament-priority-floor-penalty <n>
+                                      Penalty strength when regular objective falls below the floor
   --tournament-weight <n>             Combined objective weight for tournament benchmark
   --regular-weight <n>                Combined objective weight for regular-season benchmark
   --ensemble-top-k <n>                Evaluate weighted top-K parameter ensemble candidate
@@ -481,6 +488,26 @@ function parseArgs(argv) {
       out.benchmarkOptions.regular_objective_accuracy_weight = 0.5;
       continue;
     }
+    if (arg === "--objective-mode" && next) {
+      out.benchmarkOptions.objective_mode = String(next).trim().toLowerCase();
+      i += 1;
+      continue;
+    }
+    if (arg === "--tournament-priority-regular-weight" && next) {
+      out.benchmarkOptions.tournament_priority_regular_weight = parseNumber(next, NaN);
+      i += 1;
+      continue;
+    }
+    if (arg === "--tournament-priority-regular-floor" && next) {
+      out.benchmarkOptions.tournament_priority_regular_floor = parseNumber(next, NaN);
+      i += 1;
+      continue;
+    }
+    if (arg === "--tournament-priority-floor-penalty" && next) {
+      out.benchmarkOptions.tournament_priority_floor_penalty = parseNumber(next, NaN);
+      i += 1;
+      continue;
+    }
     if (arg === "--tournament-weight" && next) {
       out.benchmarkOptions.tournament_weight = parseNumber(next, NaN);
       i += 1;
@@ -680,6 +707,10 @@ async function main() {
     regular_robust_std_weight: result.settings?.regular_robust_std_weight ?? null,
     regular_robust_downside_weight: result.settings?.regular_robust_downside_weight ?? null,
     regular_robust_downside_quantile: result.settings?.regular_robust_downside_quantile ?? null,
+    objective_mode: result.settings?.objective_mode ?? null,
+    tournament_priority_regular_weight: result.settings?.tournament_priority_regular_weight ?? null,
+    tournament_priority_regular_floor: result.settings?.tournament_priority_regular_floor ?? null,
+    tournament_priority_floor_penalty: result.settings?.tournament_priority_floor_penalty ?? null,
     early_stop_patience: result.settings?.early_stop_patience ?? null,
     early_stop_min_improvement: result.settings?.early_stop_min_improvement ?? null,
     early_stop_min_evaluated: result.settings?.early_stop_min_evaluated ?? null,

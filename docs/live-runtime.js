@@ -5161,18 +5161,69 @@
   }
 
   function benchmarkCombinedObjective(tournamentScore, regularScore, benchCfg = {}) {
+    const mode = String(benchCfg.objective_mode || "weighted").trim().toLowerCase();
+    const tournamentPriorityRegularWeight = clampNumber(
+      finiteOr(benchCfg.tournament_priority_regular_weight, 0.12),
+      0,
+      1,
+    );
+    const tournamentPriorityRegularFloor = finiteOr(
+      benchCfg.tournament_priority_regular_floor,
+      Number.NEGATIVE_INFINITY,
+    );
+    const tournamentPriorityFloorPenalty = clampNumber(
+      finiteOr(benchCfg.tournament_priority_floor_penalty, 0.35),
+      0,
+      5,
+    );
     const tournamentWeight = clampNumber(finiteOr(benchCfg.tournament_weight, 0.62), 0, 1);
     const regularWeight = clampNumber(finiteOr(benchCfg.regular_weight, 0.38), 0, 1);
     const tAvail = tournamentScore && isFiniteNumber(tournamentScore.objective);
     const rAvail = regularScore && isFiniteNumber(regularScore.objective);
+
+    if (mode === "tournament_only") {
+      if (!tAvail && rAvail) {
+        return { objective: regularScore.objective, weights: { tournament: 0, regular: 1 }, mode };
+      }
+      if (!tAvail && !rAvail) {
+        return { objective: Number.NEGATIVE_INFINITY, weights: { tournament: 0, regular: 0 }, mode };
+      }
+      const floorDeficit = rAvail
+        ? Math.max(0, tournamentPriorityRegularFloor - regularScore.objective)
+        : 0;
+      return {
+        objective: tournamentScore.objective - tournamentPriorityFloorPenalty * floorDeficit,
+        weights: { tournament: 1, regular: 0 },
+        mode,
+      };
+    }
+
+    if (mode === "tournament_priority") {
+      if (!tAvail && rAvail) {
+        return { objective: regularScore.objective, weights: { tournament: 0, regular: 1 }, mode };
+      }
+      if (!tAvail && !rAvail) {
+        return { objective: Number.NEGATIVE_INFINITY, weights: { tournament: 0, regular: 0 }, mode };
+      }
+      const regularTerm = rAvail ? (tournamentPriorityRegularWeight * regularScore.objective) : 0;
+      const floorDeficit = rAvail
+        ? Math.max(0, tournamentPriorityRegularFloor - regularScore.objective)
+        : 0;
+      return {
+        objective: tournamentScore.objective + regularTerm - tournamentPriorityFloorPenalty * floorDeficit,
+        weights: { tournament: 1, regular: tournamentPriorityRegularWeight },
+        mode,
+      };
+    }
+
     if (tAvail && !rAvail) {
-      return { objective: tournamentScore.objective, weights: { tournament: 1, regular: 0 } };
+      return { objective: tournamentScore.objective, weights: { tournament: 1, regular: 0 }, mode: "weighted" };
     }
     if (!tAvail && rAvail) {
-      return { objective: regularScore.objective, weights: { tournament: 0, regular: 1 } };
+      return { objective: regularScore.objective, weights: { tournament: 0, regular: 1 }, mode: "weighted" };
     }
     if (!tAvail && !rAvail) {
-      return { objective: Number.NEGATIVE_INFINITY, weights: { tournament: 0, regular: 0 } };
+      return { objective: Number.NEGATIVE_INFINITY, weights: { tournament: 0, regular: 0 }, mode: "weighted" };
     }
     const weightSum = tournamentWeight + regularWeight;
     const t = weightSum > 1e-9 ? tournamentWeight / weightSum : 0.5;
@@ -5180,6 +5231,7 @@
     return {
       objective: t * tournamentScore.objective + r * regularScore.objective,
       weights: { tournament: t, regular: r },
+      mode: "weighted",
     };
   }
 
@@ -5378,6 +5430,7 @@
       leave_one_season_out: leaveOneSeasonOut,
       tournament_loso: tournamentLoso,
       regular_loso: regularLoso,
+      objective_mode: String(benchmarkCfg.objective_mode || "weighted").trim().toLowerCase(),
       ensemble_top_k: ensembleTopK,
       ensemble_temperature: ensembleTemperature,
       early_stop_min_evaluated: earlyStopMinEvaluated,
@@ -5591,6 +5644,7 @@
         objective: combined.objective,
         objective_raw: combined.objective,
         objective_weights: combined.weights,
+        objective_mode: combined.mode || "weighted",
         tournament: tournamentScore,
         regular_season: regularScore,
         search_tournament_contexts_used: tournamentContextsForCandidate.length,
@@ -6031,6 +6085,7 @@
         row.objective = combined.objective;
         row.objective_raw = combined.objective;
         row.objective_weights = combined.weights;
+        row.objective_mode = combined.mode || "weighted";
         row.tournament = tournamentScore;
         row.regular_season = regularScore;
         row.rescored_full = true;
@@ -6085,6 +6140,7 @@
           objective: combined.objective,
           objective_raw: combined.objective,
           objective_weights: combined.weights,
+          objective_mode: combined.mode || "weighted",
           tournament: tournamentScore,
           regular_season: regularScore,
           params: ensembleParams,
@@ -6232,6 +6288,21 @@
           finiteOr(evalCfg.regular_robust_downside_quantile, finiteOr(evalCfg.robust_downside_quantile, 0.2)),
           0.01,
           0.5,
+        ),
+        objective_mode: String(benchmarkCfg.objective_mode || "weighted").trim().toLowerCase(),
+        tournament_priority_regular_weight: clampNumber(
+          finiteOr(benchmarkCfg.tournament_priority_regular_weight, 0.12),
+          0,
+          1,
+        ),
+        tournament_priority_regular_floor: finiteOr(
+          benchmarkCfg.tournament_priority_regular_floor,
+          Number.NEGATIVE_INFINITY,
+        ),
+        tournament_priority_floor_penalty: clampNumber(
+          finiteOr(benchmarkCfg.tournament_priority_floor_penalty, 0.35),
+          0,
+          5,
         ),
         tournament_weight: clampNumber(finiteOr(benchmarkCfg.tournament_weight, 0.62), 0, 1),
         regular_weight: clampNumber(finiteOr(benchmarkCfg.regular_weight, 0.38), 0, 1),

@@ -210,6 +210,10 @@ Useful flags:
 - `--progress-every 10` (live counter/progress updates)
 - `--no-progress` (quiet mode)
 - `--accuracy-priority` (bias regular-game objective toward accuracy)
+- `--objective-mode tournament_priority` (maximize tournament first, regular as guardrail)
+- `--tournament-priority-regular-weight 0.08`
+- `--tournament-priority-regular-floor 0.48`
+- `--tournament-priority-floor-penalty 0.35`
 - `--tournament-weight 0.62`
 - `--regular-weight 0.38`
 - `--skip-tournament` (regular-season-only optimization)
