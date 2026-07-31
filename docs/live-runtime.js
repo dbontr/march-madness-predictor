@@ -496,7 +496,7 @@
   async function fetchScoreboardRange(startYmd, endYmd, options = {}) {
     const days = enumerateDays(startYmd, endYmd);
     const cacheMinutes = clampNumber(finiteOr(options.cache_minutes, 20), 0, 24 * 60);
-    const cacheKey = `mmp:scoreboard:v2:${startYmd}:${endYmd}`;
+    const cacheKey = `mmp:scoreboard:v3:${startYmd}:${endYmd}`;
     const now = Date.now();
     if (cacheMinutes > 0) {
       const cached = safeReadLocalStorageJson(cacheKey);
@@ -510,21 +510,34 @@
       }
     }
 
-    const batches = await mapWithConcurrency(
-      days,
-      Math.round(clampNumber(finiteOr(options.concurrency, 6), 1, 24)),
-      async (day) => {
-        try {
-          const url = `${SCOREBOARD_URL}?dates=${ymdCompact(day)}&groups=50&limit=1000`;
-          const payload = await fetchJson(url, { cache: "no-store" });
-          const events = payload.events || [];
-          return events.map((event) => ({ day, event }));
-        } catch {
-          return [];
-        }
-      },
-    );
-    const out = batches.flat();
+    let out = [];
+    try {
+      const rangeToken = `${ymdCompact(startYmd)}-${ymdCompact(endYmd)}`;
+      const url = `${SCOREBOARD_URL}?dates=${rangeToken}&groups=50&limit=1000`;
+      const payload = await fetchJson(url, { cache: "no-store" });
+      const events = Array.isArray(payload.events) ? payload.events : [];
+      out = events.map((event) => ({
+        day: normalizeMaybeYmd(event?.date) || startYmd,
+        event,
+      }));
+    } catch {
+      const batches = await mapWithConcurrency(
+        days,
+        Math.round(clampNumber(finiteOr(options.concurrency, 6), 1, 24)),
+        async (day) => {
+          try {
+            const url = `${SCOREBOARD_URL}?dates=${ymdCompact(day)}&groups=50&limit=1000`;
+            const payload = await fetchJson(url, { cache: "no-store" });
+            const events = payload.events || [];
+            return events.map((event) => ({ day, event }));
+          } catch {
+            return [];
+          }
+        },
+      );
+      out = batches.flat();
+    }
+
     if (cacheMinutes > 0) {
       safeWriteLocalStorageJson(cacheKey, {
         created_at: now,
@@ -7351,6 +7364,7 @@
       blendAvailableProbabilities,
       buildLeakageSafeSnapshot,
       gameOccursBeforeCutoff,
+      fetchScoreboardRange,
       loadRuntimeData,
       prepareRegularSeasonBenchmarkContexts,
       prepareBacktestContexts,

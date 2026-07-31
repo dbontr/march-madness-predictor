@@ -226,3 +226,50 @@ test("tournament context includes the safe current-season snapshot", async () =>
   assert.notEqual(currentRows.find((row) => row.team === "Alpha").net_rating, -35);
   assert.ok(context.trainGames.every((row) => row.season < 2024));
 });
+test("scoreboard range uses one ESPN request", async () => {
+  const requests = [];
+  const runtime = loadRuntime(async (url) => {
+    requests.push(String(url));
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        events: [
+          { id: "a", date: "2026-03-17T22:00:00Z" },
+          { id: "b", date: "2026-03-19T01:00:00Z" },
+        ],
+      }),
+    };
+  });
+
+  const rows = await runtime.__test.fetchScoreboardRange(
+    "2026-03-17", "2026-04-08", { cache_minutes: 0 },
+  );
+  assert.equal(requests.length, 1);
+  assert.match(requests[0], /dates=20260317-20260408/);
+  assert.deepEqual(rows.map((row) => row.day), ["2026-03-17", "2026-03-19"]);
+});
+test("scoreboard range falls back to daily requests", async () => {
+  const requests = [];
+  const runtime = loadRuntime(async (url) => {
+    const target = String(url);
+    requests.push(target);
+    if (target.includes("dates=20260317-20260318")) {
+      return { ok: false, status: 503, json: async () => ({}) };
+    }
+    const compact = target.match(/dates=(\d{8})/)?.[1] || "";
+    const day = `${compact.slice(0, 4)}-${compact.slice(4, 6)}-${compact.slice(6, 8)}`;
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ events: [{ id: compact, date: `${day}T20:00:00Z` }] }),
+    };
+  });
+
+  const rows = await runtime.__test.fetchScoreboardRange(
+    "2026-03-17", "2026-03-18", { cache_minutes: 0, concurrency: 2 },
+  );
+  assert.equal(requests.length, 3);
+  assert.equal(rows.length, 2);
+  assert.deepEqual(JSON.parse(JSON.stringify(rows.map((row) => row.day).sort())), ["2026-03-17", "2026-03-18"]);
+});
