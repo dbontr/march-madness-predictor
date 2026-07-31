@@ -156,7 +156,7 @@ test("undated games do not pass a date-only cutoff", () => {
   );
 });
 
-test("live loader prefers compact history without fetching the full file", async () => {
+test("live loader prefers both compact runtime files", async () => {
   const requests = [];
   const teamStatsCsv = [
     "season,team,seed,adj_offense,adj_defense,tempo,sos,net_rating",
@@ -173,7 +173,8 @@ test("live loader prefers compact history without fetching the full file", async
   const fetchImpl = async (url) => {
     requests.push(String(url));
     let body = "";
-    if (String(url).endsWith("team_stats.csv")) body = teamStatsCsv;
+    if (String(url).endsWith("team_stats_live.csv")) body = teamStatsCsv;
+    else if (String(url).endsWith("/team_stats.csv")) throw new Error("full team stats should not be fetched");
     else if (String(url).endsWith("historical_games_live.csv")) body = liveHistoryCsv;
     else if (String(url).endsWith("historical_games.csv")) throw new Error("full history should not be fetched");
     else return { ok: false, status: 404, text: async () => "" };
@@ -183,8 +184,12 @@ test("live loader prefers compact history without fetching the full file", async
   const runtime = loadRuntime(fetchImpl);
   const result = await runtime.__test.loadRuntimeData(2026, { prefer_live_history: true });
   assert.equal(result.historical.length, 1);
+  assert.equal(result.teamStats.length, 2);
+  assert.ok(requests.some((url) => url.endsWith("team_stats_live.csv")));
   assert.ok(requests.some((url) => url.endsWith("historical_games_live.csv")));
+  assert.ok(!requests.some((url) => url.endsWith("/team_stats.csv")));
   assert.ok(!requests.some((url) => url.endsWith("/historical_games.csv")));
+  assert.ok(result.source_fingerprint);
 });
 
 test("tournament context includes the safe current-season snapshot", async () => {
@@ -272,4 +277,56 @@ test("scoreboard range falls back to daily requests", async () => {
   assert.equal(requests.length, 3);
   assert.equal(rows.length, 2);
   assert.deepEqual(JSON.parse(JSON.stringify(rows.map((row) => row.day).sort())), ["2026-03-17", "2026-03-18"]);
+});
+
+test("runtime artifact cache key is deterministic and invalidates changes", () => {
+  const params = { blend_logistic: 0.3, logistic_epochs: 150 };
+  const liveCfg = { max_seasons: 5, game_cap: 2600, include_postseason: true };
+  const first = internals.runtimeArtifactCacheKey(2026, "data-a", params, liveCfg, true);
+  const second = internals.runtimeArtifactCacheKey(2026, "data-a", params, liveCfg, true);
+  assert.equal(first, second);
+  assert.notEqual(first, internals.runtimeArtifactCacheKey(2026, "data-b", params, liveCfg, true));
+  assert.notEqual(first, internals.runtimeArtifactCacheKey(
+    2026, "data-a", { ...params, logistic_epochs: 120 }, liveCfg, true,
+  ));
+  assert.notEqual(first, internals.runtimeArtifactCacheKey(
+    2026, "data-a", params, { ...liveCfg, game_cap: 2200 }, true,
+  ));
+});
+
+test("runtime artifact cache gracefully disables without IndexedDB", async () => {
+  const result = await internals.readRuntimeArtifact(2026, "missing");
+  assert.equal(result, null);
+});
+
+test("live loader falls back to full runtime files", async () => {
+  const requests = [];
+  const teamCsv = [
+    "season,team,seed,adj_offense,adj_defense,tempo,sos,net_rating",
+    "2026,Alpha,1,120,95,68,5,25",
+    "2026,Beta,16,95,120,68,-5,-25",
+    "",
+  ].join("\n");
+  const historyCsv = [
+    "season,team_a,team_b,score_a,score_b,neutral_site,round_name,game_date",
+    "2026,Alpha,Beta,80,60,1,Regular Season,2025-11-10",
+    "",
+  ].join("\n");
+  const runtime = loadRuntime(async (url) => {
+    const target = String(url);
+    requests.push(target);
+    if (target.endsWith("team_stats_live.csv") || target.endsWith("historical_games_live.csv")) {
+      return { ok: false, status: 404, text: async () => "" };
+    }
+    if (target.endsWith("team_stats.csv")) return { ok: true, status: 200, text: async () => teamCsv };
+    if (target.endsWith("historical_games.csv")) return { ok: true, status: 200, text: async () => historyCsv };
+    return { ok: false, status: 404, text: async () => "" };
+  });
+  const result = await runtime.__test.loadRuntimeData(2026, { prefer_live_data: true });
+  assert.equal(result.teamStats.length, 2);
+  assert.equal(result.historical.length, 1);
+  assert.ok(requests.some((url) => url.endsWith("team_stats_live.csv")));
+  assert.ok(requests.some((url) => url.endsWith("/team_stats.csv")));
+  assert.ok(requests.some((url) => url.endsWith("historical_games_live.csv")));
+  assert.ok(requests.some((url) => url.endsWith("/historical_games.csv")));
 });

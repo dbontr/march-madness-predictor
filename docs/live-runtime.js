@@ -1591,6 +1591,63 @@
     return `${seasons.join(",")}|${teamStats.length}|${hSeasons.join(",")}|${historical.length}`;
   }
 
+  function runtimeSourceFingerprint(parts) {
+    return (parts || []).map((part) => {
+      const value = String(part || "");
+      return `${value.length}:${hashStringSeed(value).toString(36)}`;
+    }).join("|");
+  }
+
+  function runtimeModelCodeFingerprint() {
+    const functions = [
+      normalizeTeamStats,
+      normalizeGames,
+      runDataQualityGuards,
+      buildMatchupRawVector,
+      matchupInteractionEdge,
+      gameSampleWeight,
+      collectTrainingSamples,
+      teamPowerScore,
+      styleKeyMetrics,
+      baseOffDefenseFromRow,
+      buildPreseasonPriors,
+      fitOffDefenseRatings,
+      computeRollingFormByTeam,
+      computeScheduleProfileByTeam,
+      fitMarketPowerRatings,
+      computeTeamVarianceByTeam,
+      computeQualityProfileByTeam,
+      trainModel,
+      buildPerformanceStyleContext,
+      fitStyleInteractionModel,
+      fitArchetypeMatchupModel,
+      fitLatentMatchupModel,
+      trainTreeModel,
+      trainBlendStacker,
+      fitProbabilityCalibrator,
+    ];
+    const token = [
+      FEATURE_COLS.join(","),
+      MATCHUP_FEATURE_COLS.join(","),
+      ...functions.map((fn) => Function.prototype.toString.call(fn)),
+    ].join("|");
+    return hashStringSeed(token).toString(36);
+  }
+
+  function runtimeArtifactCacheKey(season, sourceFingerprint, liveParams, liveCfg = {}, fastModels = true) {
+    const configToken = JSON.stringify({
+      model_code_fingerprint: runtimeModelCodeFingerprint(),
+      season: Number(season),
+      source_fingerprint: String(sourceFingerprint || ""),
+      fast_models: fastModels !== false,
+      max_seasons: Number(liveCfg.max_seasons || 5),
+      game_cap: Number(liveCfg.game_cap || 2600),
+      include_postseason: liveCfg.include_postseason !== false,
+      params: liveParams || {},
+    });
+    return `v1:${hashStringSeed(configToken).toString(36)}`;
+  }
+
   function sigmoid(z) {
     if (z >= 0) {
       const ex = Math.exp(-z);
@@ -4214,6 +4271,97 @@
     }
   }
 
+  function browserIndexedDb() {
+    try {
+      return typeof indexedDB === "undefined" ? null : indexedDB;
+    } catch {
+      return null;
+    }
+  }
+
+  function openRuntimeArtifactDb() {
+    const idb = browserIndexedDb();
+    if (!idb) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      let request;
+      try {
+        request = idb.open("mmp-browser-runtime-v1", 1);
+      } catch {
+        resolve(null);
+        return;
+      }
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains("artifacts")) {
+          db.createObjectStore("artifacts", { keyPath: "id" });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => resolve(null);
+      request.onblocked = () => resolve(null);
+    });
+  }
+
+  async function readRuntimeArtifact(season, cacheKey) {
+    const db = await openRuntimeArtifactDb();
+    if (!db) return null;
+    return new Promise((resolve) => {
+      let request;
+      try {
+        request = db.transaction("artifacts", "readonly")
+          .objectStore("artifacts")
+          .get(`season:${Number(season)}`);
+      } catch {
+        db.close();
+        resolve(null);
+        return;
+      }
+      request.onsuccess = () => {
+        const value = request.result;
+        db.close();
+        resolve(value?.cache_key === cacheKey ? value : null);
+      };
+      request.onerror = () => {
+        db.close();
+        resolve(null);
+      };
+    });
+  }
+
+  async function writeRuntimeArtifact(season, cacheKey, model, performanceStyle) {
+    const db = await openRuntimeArtifactDb();
+    if (!db) return false;
+    return new Promise((resolve) => {
+      let transaction;
+      try {
+        transaction = db.transaction("artifacts", "readwrite");
+        transaction.objectStore("artifacts").put({
+          id: `season:${Number(season)}`,
+          cache_key: cacheKey,
+          created_at: Date.now(),
+          model,
+          performanceStyle,
+        });
+      } catch {
+        db.close();
+        resolve(false);
+        return;
+      }
+      transaction.oncomplete = () => { db.close(); resolve(true); };
+      transaction.onerror = () => { db.close(); resolve(false); };
+      transaction.onabort = () => { db.close(); resolve(false); };
+    });
+  }
+
+  function isUsableRuntimeArtifact(value) {
+    return Boolean(
+      value &&
+      Array.isArray(value.model?.weights) &&
+      value.model.weights.length > 0 &&
+      value.performanceStyle?.ratingBySeasonTeam instanceof Map
+    );
+  }
+
   function isNcaaTournamentRoundName(roundName) {
     const name = canonicalName(roundName);
     if (!name) return false;
@@ -6809,12 +6957,15 @@
 
   async function loadRuntimeData(season, options = {}) {
     const base = `./data/runtime/${season}`;
-    const preferLiveHistory = options.prefer_live_history === true;
-    const historicalPromise = preferLiveHistory
+    const preferLiveData = options.prefer_live_history === true || options.prefer_live_data === true;
+    const teamStatsPromise = preferLiveData
+      ? fetchText(`${base}/team_stats_live.csv`).catch(() => fetchText(`${base}/team_stats.csv`))
+      : fetchText(`${base}/team_stats.csv`);
+    const historicalPromise = preferLiveData
       ? fetchText(`${base}/historical_games_live.csv`).catch(() => fetchText(`${base}/historical_games.csv`))
       : fetchText(`${base}/historical_games.csv`);
     const [teamStatsText, historicalText, aliasesText, injuriesText] = await Promise.all([
-      fetchText(`${base}/team_stats.csv`),
+      teamStatsPromise,
       historicalPromise,
       fetchText(`${base}/aliases.csv`).catch(() => "canonical,alias\n"),
       fetchText(`${base}/injuries.csv`).catch(() => "team,injuries_impact\n"),
@@ -6845,6 +6996,7 @@
       injuries,
       aliasMap,
       quality_report: quality.report,
+      source_fingerprint: runtimeSourceFingerprint([teamStatsText, historicalText, aliasesText, injuriesText]),
     };
   }
 
@@ -7121,30 +7273,23 @@
   }
 
   async function buildLivePayload(options = {}) {
+    const runtimeStartedAt = Date.now();
     const config = await fetchJson("./data/runtime/config.json").catch(() => ({}));
 
     const season = Number(options.season || config.default_season || new Date().getUTCFullYear());
     const liveCfg = config?.live_runtime || {};
-
-    const { teamStats, historical, injuries, aliasMap, quality_report: qualityReport } = await loadRuntimeData(season, { prefer_live_history: true });
+    const runtimeData = await loadRuntimeData(season, { prefer_live_data: true });
+    const {
+      teamStats,
+      historical,
+      injuries,
+      aliasMap,
+      quality_report: qualityReport,
+      source_fingerprint: sourceFingerprint,
+    } = runtimeData;
     const adjustedTeamStats = applyInjuries(teamStats, injuries, season);
     const snapshot = seasonSnapshot(adjustedTeamStats, season);
-
-    const tuningResult = await resolveTuningParams(config, adjustedTeamStats, historical, aliasMap, season);
-    const tunedParams = normalizeTuningParams(tuningResult.params || {});
-    const liveFastModels = liveCfg.fast_models !== false;
-    const liveTrainingGames = selectLiveTrainingGames(historical, season, liveCfg);
-    const trainingGames = liveTrainingGames.length ? liveTrainingGames : historical;
-    const liveParams = benchmarkModelParams(tunedParams, liveFastModels);
-
-    const model = trainModel(adjustedTeamStats, trainingGames, liveParams);
-    const performanceStyle = buildPerformanceStyleContext(adjustedTeamStats, trainingGames, liveParams);
-    performanceStyle.tuning = liveParams;
-    if (!liveFastModels) {
-      performanceStyle.treeModel = trainTreeModel(adjustedTeamStats, trainingGames, liveParams);
-      performanceStyle.stacker = trainBlendStacker(adjustedTeamStats, trainingGames, model, performanceStyle);
-      performanceStyle.calibrator = fitProbabilityCalibrator(adjustedTeamStats, trainingGames, model, performanceStyle);
-    }
+    const targetTeams = snapshot.map((row) => row.team);
 
     const window = pickWindow(config, season);
     const firstFourStart = window.first_four_start;
@@ -7153,10 +7298,54 @@
     const resultsEnd = minYmd(todayYmdUtc(), championshipDate);
     const fetchEnd = maxYmd(firstRoundCaptureEnd, resultsEnd);
 
-    const scoreboardRows = await fetchScoreboardRange(firstFourStart, fetchEnd, {
+    const scoreboardPromise = fetchScoreboardRange(firstFourStart, fetchEnd, {
       cache_minutes: clampNumber(finiteOr(liveCfg.scoreboard_cache_minutes, 20), 0, 24 * 60),
       concurrency: Math.round(clampNumber(finiteOr(liveCfg.scoreboard_concurrency, 6), 1, 24)),
     });
+    const fetchTeamLogosEnabled = liveCfg.fetch_team_logos !== false;
+    const teamLogosPromise = fetchTeamLogosEnabled
+      ? fetchTeamLogos(targetTeams, aliasMap, {
+          cache_minutes: clampNumber(finiteOr(liveCfg.team_logo_cache_minutes, 12 * 60), 0, 7 * 24 * 60),
+        }).catch(() => ({}))
+      : Promise.resolve({});
+    const staticLogoOverridesPromise = fetchStaticLogoOverrides(aliasMap).catch(() => ({}));
+
+    const tuningResult = await resolveTuningParams(config, adjustedTeamStats, historical, aliasMap, season);
+    const tunedParams = normalizeTuningParams(tuningResult.params || {});
+    const liveFastModels = liveCfg.fast_models !== false;
+    const liveTrainingGames = selectLiveTrainingGames(historical, season, liveCfg);
+    const trainingGames = liveTrainingGames.length ? liveTrainingGames : historical;
+    const liveParams = benchmarkModelParams(tunedParams, liveFastModels);
+    const cacheKey = runtimeArtifactCacheKey(season, sourceFingerprint, liveParams, liveCfg, liveFastModels);
+    const modelPhaseStartedAt = Date.now();
+    const cachedArtifact = await readRuntimeArtifact(season, cacheKey);
+
+    let model;
+    let performanceStyle;
+    let cacheWritePromise = Promise.resolve(false);
+    let modelCacheSource = browserIndexedDb() ? "miss" : "unavailable";
+    if (isUsableRuntimeArtifact(cachedArtifact)) {
+      model = cachedArtifact.model;
+      performanceStyle = cachedArtifact.performanceStyle;
+      modelCacheSource = "hit";
+    } else {
+      model = trainModel(adjustedTeamStats, trainingGames, liveParams);
+      performanceStyle = buildPerformanceStyleContext(adjustedTeamStats, trainingGames, liveParams);
+      performanceStyle.tuning = liveParams;
+      if (!liveFastModels) {
+        performanceStyle.treeModel = trainTreeModel(adjustedTeamStats, trainingGames, liveParams);
+        performanceStyle.stacker = trainBlendStacker(adjustedTeamStats, trainingGames, model, performanceStyle);
+        performanceStyle.calibrator = fitProbabilityCalibrator(adjustedTeamStats, trainingGames, model, performanceStyle);
+      }
+      if (browserIndexedDb()) {
+        modelCacheSource = "trained";
+        cacheWritePromise = writeRuntimeArtifact(season, cacheKey, model, performanceStyle).catch(() => false);
+      }
+    }
+    performanceStyle.tuning = liveParams;
+    const modelPhaseMs = Date.now() - modelPhaseStartedAt;
+
+    const scoreboardRows = await scoreboardPromise;
     const ncaaEvents = extractNcaaEvents(scoreboardRows, aliasMap);
 
     let bracketEvents = ncaaEvents.filter(
@@ -7183,21 +7372,12 @@
 
     const lockedWinners = applyKnownResults(bracket, knownResults);
 
-    let teamLogos = {};
-    const fetchTeamLogosEnabled = liveCfg.fetch_team_logos !== false;
-    if (fetchTeamLogosEnabled) {
-      try {
-        teamLogos = await fetchTeamLogos(snapshot.map((row) => row.team), aliasMap, {
-          cache_minutes: clampNumber(finiteOr(liveCfg.team_logo_cache_minutes, 12 * 60), 0, 7 * 24 * 60),
-        });
-      } catch {
-        teamLogos = {};
-      }
-    }
+    let teamLogos = await teamLogosPromise;
     const eventLogos = logoMapFromEvents(ncaaEvents, aliasMap);
-    const staticLogoOverrides = await fetchStaticLogoOverrides(aliasMap).catch(() => ({}));
+    const staticLogoOverrides = await staticLogoOverridesPromise;
+    await cacheWritePromise;
     teamLogos = ensureLogoCoverage(
-      snapshot.map((row) => row.team),
+      targetTeams,
       { ...teamLogos, ...eventLogos, ...staticLogoOverrides },
       aliasMap,
     );
@@ -7249,6 +7429,10 @@
         live_training_games: trainingGames.length,
         live_training_max_seasons: Math.round(clampNumber(finiteOr(liveCfg.max_seasons, 5), 1, 20)),
         live_training_game_cap: Math.round(clampNumber(finiteOr(liveCfg.game_cap, 2600), 200, 50000)),
+        live_team_stat_rows: adjustedTeamStats.length,
+        browser_model_cache: modelCacheSource,
+        browser_model_phase_ms: modelPhaseMs,
+        browser_runtime_elapsed_ms: Date.now() - runtimeStartedAt,
       },
       model_tuning: {
         source: tuningResult.source,
@@ -7365,6 +7549,10 @@
       buildLeakageSafeSnapshot,
       gameOccursBeforeCutoff,
       fetchScoreboardRange,
+      runtimeArtifactCacheKey,
+      runtimeSourceFingerprint,
+      readRuntimeArtifact,
+      isUsableRuntimeArtifact,
       loadRuntimeData,
       prepareRegularSeasonBenchmarkContexts,
       prepareBacktestContexts,

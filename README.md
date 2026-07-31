@@ -33,7 +33,7 @@ This repo is now run-based, not batch-output-based.
 2. In repo settings, enable Pages and set source to the `docs/` folder (on your chosen branch).
 3. Open the Pages URL.
 
-The app recomputes predictions directly in the browser every open/refresh.
+All model training, prediction, and bracket solving run in the browser. The first load for a data/config version trains locally; repeat loads can reuse that browser-trained state from IndexedDB. No prediction server is used.
 
 If your root URL is publishing repo root, keep `index.html` in root so it redirects to `./docs/`.
 
@@ -53,7 +53,7 @@ npm run check
 npm run benchmark:smoke
 ```
 
-Regenerate the compact browser history after changing runtime limits or historical data:
+Regenerate the compact browser history and team-stat files after changing runtime limits or source data:
 
 ```bash
 npm run build:live-history
@@ -80,6 +80,7 @@ The browser runtime expects:
 - `docs/data/runtime/config.json`
 - `docs/data/runtime/<season>/team_stats.csv`
 - `docs/data/runtime/<season>/historical_games.csv`
+- `docs/data/runtime/<season>/team_stats_live.csv` (compact live-training seasons plus one prior-season buffer; falls back to the full file)
 - `docs/data/runtime/<season>/historical_games_live.csv` (compact live-training subset; falls back to the full file)
 - `docs/data/runtime/<season>/aliases.csv` (optional)
 - `docs/data/runtime/<season>/injuries.csv` (optional)
@@ -90,15 +91,14 @@ Current repo includes `2026` runtime CSVs under `docs/data/runtime/2026/`.
 
 At runtime, `docs/live-runtime.js`:
 
-1. loads the compact live-history CSV when available, with automatic fallback to the full history
-2. fetches NCAA scoreboard/event data from ESPN public JSON endpoints
+1. loads compact live team-stat and history CSVs when available, with automatic fallback to the full files
+2. starts scoreboard and logo requests before model work so browser networking overlaps CPU training
 3. runs data-quality guards against malformed rows, duplicate games, unknown teams, and outliers
-4. derives bracket slots and locks completed game winners
-5. computes weighted performance context (tempo-adjusted margins, recency, round importance, rolling form)
-6. trains an ensemble (logistic + tree + performance + continuous style interaction model)
-7. calibrates probabilities with round-aware calibrators (early vs late rounds)
-8. runs deterministic bracket solving
-9. renders bracket board + title odds + team logos
+4. checks IndexedDB for model state previously trained by this browser from the same files and parameters
+5. on a cache miss, trains the configured ensemble entirely in the browser and saves its cloneable model state locally
+6. derives bracket slots, locks completed winners, and computes matchup probabilities
+7. runs deterministic bracket solving
+8. renders bracket board, title odds, and team logos
 
 ## Model Tuning + Backtests
 
@@ -109,7 +109,7 @@ At runtime, `docs/live-runtime.js`:
 - Adaptive tuning search (random -> refine -> crossover -> CEM -> local search) optimizes objective = normalized bracket score + actual-winner probability - stability penalty across seasons.
 - Seed/rank is excluded from matchup model features and tie-break scoring (performance metrics only).
 - Home-court context is modeled for non-neutral games in game-level backtests and calibration.
-- Tuned params are cached in browser local storage to avoid rerunning every refresh.
+- Tuned parameters use browser local storage; trained runtime model state uses IndexedDB and is invalidated whenever source files, live limits, model mode, or model parameters change.
 - Configure behavior in `docs/data/runtime/config.json` under:
   - `model_params`
   - `model_tuning`
@@ -161,8 +161,9 @@ What this script does:
   - `data/raw/<target-season>/historical_games.csv`
   - `docs/data/runtime/<target-season>/team_stats.csv`
   - `docs/data/runtime/<target-season>/historical_games.csv`
+  - `docs/data/runtime/<target-season>/team_stats_live.csv`
   - `docs/data/runtime/<target-season>/historical_games_live.csv`
-- The compact live file uses `live_runtime.max_seasons`, `live_runtime.game_cap`, and `live_runtime.include_postseason` from runtime config.
+- The compact live files use `live_runtime.max_seasons`, `live_runtime.game_cap`, and `live_runtime.include_postseason`; team stats retain one additional prior season for preseason priors.
 - Stores generation metadata in `data/generated/<target-season>/full_d1_generation_report.json`.
 
 Useful flags:

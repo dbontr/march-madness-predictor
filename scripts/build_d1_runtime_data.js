@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { buildLiveRows, toCsv: serializeLiveCsv } = require("./build_live_history.js");
+const { buildLiveRows, buildLiveTeamStatsRows, toCsv: serializeLiveCsv } = require("./build_live_history.js");
 
 const SCOREBOARD_URL =
   "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard";
@@ -1207,6 +1207,7 @@ async function main() {
   const rawSeasonDir = path.join(maybeRelativePath(workspace, args.rawOut), String(args.targetSeason));
   const runtimeSeasonDir = path.join(maybeRelativePath(workspace, args.runtimeOut), String(args.targetSeason));
   let liveHistoryRows = [];
+  let liveTeamStatsRows = [];
 
   if (args.writeRaw) {
     fs.mkdirSync(rawSeasonDir, { recursive: true });
@@ -1238,6 +1239,15 @@ async function main() {
     fs.writeFileSync(liveHistoryPath, serializeLiveCsv(historicalHeader, liveHistoryRows), "utf8");
     console.log(`wrote ${liveHistoryPath}`);
 
+    liveTeamStatsRows = buildLiveTeamStatsRows(
+      teamStatsRows.map((row, index) => ({ ...row, __source_index: index })),
+      liveHistoryRows,
+      { targetSeason: args.targetSeason },
+    );
+    const liveTeamStatsPath = path.join(runtimeSeasonDir, "team_stats_live.csv");
+    fs.writeFileSync(liveTeamStatsPath, serializeLiveCsv(teamStatsHeader, liveTeamStatsRows), "utf8");
+    console.log(`wrote ${liveTeamStatsPath}`);
+
     const aliasSrc = path.join(rawSeasonDir, "aliases.csv");
     const injSrc = path.join(rawSeasonDir, "injuries.csv");
     const aliasDst = path.join(runtimeSeasonDir, "aliases.csv");
@@ -1263,6 +1273,7 @@ async function main() {
     unique_teams: new Set(teamStatsRows.map((row) => `${row.season}|${row.team}`)).size,
     market_rows: historicalRows.filter((row) => isFiniteNumber(toNumber(row.market_prob_a))).length,
     live_history_rows: liveHistoryRows.length,
+    live_team_rows: liveTeamStatsRows.length,
     min_game_date: historicalRows[0]?.game_date || null,
     max_game_date: historicalRows[historicalRows.length - 1]?.game_date || null,
     cache_file: args.includeMarketLines ? summaryCachePath : null,

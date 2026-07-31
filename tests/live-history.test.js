@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { buildLiveRows, parseCsv, toCsv } = require("../scripts/build_live_history.js");
+const { buildLiveRows, buildLiveTeamStatsRows, parseCsv, toCsv } = require("../scripts/build_live_history.js");
 
 function row(season, index) {
   return {
@@ -39,4 +39,15 @@ test("CSV round-trip preserves quoted values", () => {
   const parsed = parseCsv(csv);
   assert.equal(parsed.rows[0].team_b, "A, B");
   assert.equal(parsed.rows[0].team_a, "Saint Mary's");
+});
+
+test("live team stats keep training seasons plus prior buffer", () => {
+  const teamStats = [2022, 2023, 2024, 2025, 2026].flatMap((season) => [
+    { season: String(season), team: `A${season}` },
+    { season: String(season), team: `B${season}` },
+  ]);
+  const liveHistory = [row(2024, 0), row(2025, 1)];
+  const result = buildLiveTeamStatsRows(teamStats, liveHistory, { targetSeason: 2025 });
+  assert.deepEqual([...new Set(result.map((item) => Number(item.season)))], [2023, 2024, 2025]);
+  assert.equal(result.length, 6);
 });

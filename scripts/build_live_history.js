@@ -122,6 +122,24 @@ function buildLiveRows(rows, options = {}) {
   return capRowsEvenly(filtered, options.gameCap);
 }
 
+function buildLiveTeamStatsRows(rows, liveHistoryRows, options = {}) {
+  const targetSeason = Math.round(Number(options.targetSeason));
+  const historySeasons = [...new Set((liveHistoryRows || []).map((row) => Number(row.season)))]
+    .filter((season) => Number.isFinite(season) && season <= targetSeason)
+    .sort((a, b) => a - b);
+  const keepSeasons = new Set(historySeasons);
+  if (historySeasons.length) keepSeasons.add(historySeasons[0] - 1);
+  if (Number.isFinite(targetSeason)) keepSeasons.add(targetSeason);
+
+  return (rows || [])
+    .filter((row) => keepSeasons.has(Number(row.season)))
+    .sort((a, b) => {
+      const seasonDiff = Number(a.season) - Number(b.season);
+      if (seasonDiff !== 0) return seasonDiff;
+      return String(a.team || '').localeCompare(String(b.team || ''));
+    });
+}
+
 function parseArgs(argv) {
   const out = {};
   for (let i = 0; i < argv.length; i += 1) {
@@ -132,6 +150,8 @@ function parseArgs(argv) {
     else if (arg === "--game-cap" && next) { out.gameCap = Number(next); i += 1; }
     else if (arg === "--source" && next) { out.source = next; i += 1; }
     else if (arg === "--out" && next) { out.out = next; i += 1; }
+    else if (arg === "--team-source" && next) { out.teamSource = next; i += 1; }
+    else if (arg === "--team-out" && next) { out.teamOut = next; i += 1; }
     else if (arg === "--exclude-postseason") out.includePostseason = false;
     else if (arg === "--include-postseason") out.includePostseason = true;
     else if (arg === "--help" || arg === "-h") out.help = true;
@@ -151,6 +171,8 @@ function printHelp() {
     "  --game-cap <n>",
     "  --source <csv>",
     "  --out <csv>",
+    "  --team-source <csv>",
+    "  --team-out <csv>",
     "  --exclude-postseason",
   ].join("\n"));
 }
@@ -166,6 +188,8 @@ function main() {
   const liveConfig = config.live_runtime || {};
   const source = path.resolve(workspace, args.source || `docs/data/runtime/${season}/historical_games.csv`);
   const output = path.resolve(workspace, args.out || `docs/data/runtime/${season}/historical_games_live.csv`);
+  const teamSource = path.resolve(workspace, args.teamSource || `docs/data/runtime/${season}/team_stats.csv`);
+  const teamOutput = path.resolve(workspace, args.teamOut || `docs/data/runtime/${season}/team_stats_live.csv`);
 
   const parsed = parseCsv(fs.readFileSync(source, "utf8"));
   const rows = buildLiveRows(parsed.rows, {
@@ -175,13 +199,27 @@ function main() {
     includePostseason: args.includePostseason ?? liveConfig.include_postseason !== false,
   });
 
+  const parsedTeamStats = parseCsv(fs.readFileSync(teamSource, "utf8"));
+  const liveTeamStats = buildLiveTeamStatsRows(parsedTeamStats.rows, rows, { targetSeason: season });
+
   fs.mkdirSync(path.dirname(output), { recursive: true });
   fs.writeFileSync(output, toCsv(parsed.header, rows), "utf8");
-  console.log(JSON.stringify({ source, output, source_rows: parsed.rows.length, live_rows: rows.length }, null, 2));
+  fs.mkdirSync(path.dirname(teamOutput), { recursive: true });
+  fs.writeFileSync(teamOutput, toCsv(parsedTeamStats.header, liveTeamStats), "utf8");
+  console.log(JSON.stringify({
+    source,
+    output,
+    source_rows: parsed.rows.length,
+    live_rows: rows.length,
+    team_source: teamSource,
+    team_output: teamOutput,
+    team_source_rows: parsedTeamStats.rows.length,
+    live_team_rows: liveTeamStats.length,
+  }, null, 2));
 }
 
 if (require.main === module) {
   main();
 }
 
-module.exports = { parseCsv, toCsv, capRowsEvenly, buildLiveRows, isPostseasonRound };
+module.exports = { parseCsv, toCsv, capRowsEvenly, buildLiveRows, buildLiveTeamStatsRows, isPostseasonRound };
