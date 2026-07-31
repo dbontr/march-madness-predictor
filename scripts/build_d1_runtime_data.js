@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { buildLiveRows, toCsv: serializeLiveCsv } = require("./build_live_history.js");
 
 const SCOREBOARD_URL =
   "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard";
@@ -1205,6 +1206,7 @@ async function main() {
 
   const rawSeasonDir = path.join(maybeRelativePath(workspace, args.rawOut), String(args.targetSeason));
   const runtimeSeasonDir = path.join(maybeRelativePath(workspace, args.runtimeOut), String(args.targetSeason));
+  let liveHistoryRows = [];
 
   if (args.writeRaw) {
     fs.mkdirSync(rawSeasonDir, { recursive: true });
@@ -1220,6 +1222,21 @@ async function main() {
     fs.writeFileSync(path.join(runtimeSeasonDir, "historical_games.csv"), historicalCsv, "utf8");
     console.log(`wrote ${path.join(runtimeSeasonDir, "team_stats.csv")}`);
     console.log(`wrote ${path.join(runtimeSeasonDir, "historical_games.csv")}`);
+
+    const runtimeConfig = tryReadJson(path.join(workspace, "docs", "data", "runtime", "config.json"), {}) || {};
+    const liveConfig = runtimeConfig.live_runtime || {};
+    liveHistoryRows = buildLiveRows(
+      historicalRows.map((row, index) => ({ ...row, __source_index: index })),
+      {
+        targetSeason: args.targetSeason,
+        maxSeasons: liveConfig.max_seasons || 5,
+        gameCap: liveConfig.game_cap || 2600,
+        includePostseason: liveConfig.include_postseason !== false,
+      },
+    );
+    const liveHistoryPath = path.join(runtimeSeasonDir, "historical_games_live.csv");
+    fs.writeFileSync(liveHistoryPath, serializeLiveCsv(historicalHeader, liveHistoryRows), "utf8");
+    console.log(`wrote ${liveHistoryPath}`);
 
     const aliasSrc = path.join(rawSeasonDir, "aliases.csv");
     const injSrc = path.join(rawSeasonDir, "injuries.csv");
@@ -1245,6 +1262,7 @@ async function main() {
     team_rows: teamStatsRows.length,
     unique_teams: new Set(teamStatsRows.map((row) => `${row.season}|${row.team}`)).size,
     market_rows: historicalRows.filter((row) => isFiniteNumber(toNumber(row.market_prob_a))).length,
+    live_history_rows: liveHistoryRows.length,
     min_game_date: historicalRows[0]?.game_date || null,
     max_game_date: historicalRows[historicalRows.length - 1]?.game_date || null,
     cache_file: args.includeMarketLines ? summaryCachePath : null,

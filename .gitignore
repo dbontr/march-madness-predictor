@@ -2,3 +2,4 @@ node_modules/
 .vercel/
 *.log
 .DS_Store
+data/generated/**/_smoke_improvements.json

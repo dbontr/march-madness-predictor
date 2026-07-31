@@ -1254,6 +1254,202 @@
     return [...dedup.values()];
   }
 
+
+  function neutralFeatureTemplate() {
+    return {
+      seed: 8.5,
+      adj_offense: 110,
+      adj_defense: 110,
+      tempo: 68,
+      sos: 0,
+      net_rating: 0,
+      q1_wins: 0,
+      q2_wins: 0,
+      q3_losses: 0,
+      q4_losses: 0,
+      recent_form: 0.5,
+      injuries_impact: 0,
+      fg3_pct: 0.34,
+      tov_pct: 0.17,
+      orb_pct: 0.3,
+      drb_pct: 0.7,
+      ft_rate: 0.3,
+      ast_rate: 0.55,
+      stl_rate: 0.09,
+      blk_rate: 0.08,
+      three_rate: 0.36,
+      opp_three_rate: 0.36,
+      opp_fg3_pct: 0.34,
+      opp_ft_rate: 0.3,
+    };
+  }
+
+  function priorFeatureTemplate(teamStats, season) {
+    const priorRows = teamStats.filter((row) => Number(row.season) < Number(season));
+    const out = neutralFeatureTemplate();
+    for (const feature of FEATURE_COLS) {
+      const values = priorRows.map((row) => toNumber(row[feature])).filter((value) => isFiniteNumber(value));
+      if (values.length) out[feature] = median(values);
+    }
+    return out;
+  }
+
+  function gameOccursBeforeCutoff(game, cutoff = {}) {
+    const cutoffDate = normalizeMaybeYmd(cutoff.date || cutoff.cutoff_date);
+    const gameDate = normalizeMaybeYmd(game?.game_date);
+    const cutoffIndex = toNumber(cutoff.game_index ?? cutoff.cutoff_game_index);
+    const gameIndex = toNumber(game?.game_index);
+    if (cutoffDate) {
+      if (gameDate) return gameDate < cutoffDate;
+      if (isFiniteNumber(cutoffIndex) && isFiniteNumber(gameIndex)) return gameIndex < cutoffIndex;
+      return false;
+    }
+    if (isFiniteNumber(cutoffIndex) && isFiniteNumber(gameIndex)) {
+      return gameIndex < cutoffIndex;
+    }
+    return true;
+  }
+
+  function buildLeakageSafeSnapshot(teamStats, historical, season, cutoff = {}) {
+    const seasonNumber = Number(season);
+    const currentRows = teamStats.filter((row) => Number(row.season) === seasonNumber);
+    if (!currentRows.length) {
+      throw new Error(`No team stats found for season ${seasonNumber}`);
+    }
+    const currentByTeam = new Map(currentRows.map((row) => [row.team, row]));
+    const teams = [...currentByTeam.keys()];
+    const teamSet = new Set(teams);
+    const priorSeasonRows = teamStats.filter((row) => Number(row.season) === seasonNumber - 1);
+    const priorByTeam = new Map(priorSeasonRows.map((row) => [row.team, row]));
+    const fallback = priorFeatureTemplate(teamStats, seasonNumber);
+    const cutoffDate = normalizeMaybeYmd(cutoff.date || cutoff.cutoff_date);
+    const cutoffGameIndex = toNumber(cutoff.game_index ?? cutoff.cutoff_game_index);
+
+    const games = (historical || [])
+      .filter((game) => Number(game.season) === seasonNumber)
+      .filter((game) => teamSet.has(game.team_a) && teamSet.has(game.team_b))
+      .filter((game) => gameOccursBeforeCutoff(game, cutoff))
+      .sort((a, b) => {
+        const dateDiff = String(a.game_date || "").localeCompare(String(b.game_date || ""));
+        if (dateDiff !== 0) return dateDiff;
+        return Number(a.game_index || 0) - Number(b.game_index || 0);
+      });
+
+    const gamesByTeam = new Map(teams.map((team) => [team, []]));
+    for (const game of games) {
+      const rawMargin = finiteOr(toNumber(game.score_a), 0) - finiteOr(toNumber(game.score_b), 0);
+      const homeEdge = finiteOr(toNumber(game.home_edge_a), 0);
+      const adjustedMargin = clampNumber(rawMargin - 3.2 * homeEdge, -40, 40);
+      gamesByTeam.get(game.team_a).push({
+        opp: game.team_b,
+        margin: adjustedMargin,
+        points_for: finiteOr(toNumber(game.score_a), 0),
+        points_against: finiteOr(toNumber(game.score_b), 0),
+        won: rawMargin > 0,
+      });
+      gamesByTeam.get(game.team_b).push({
+        opp: game.team_a,
+        margin: -adjustedMargin,
+        points_for: finiteOr(toNumber(game.score_b), 0),
+        points_against: finiteOr(toNumber(game.score_a), 0),
+        won: rawMargin < 0,
+      });
+    }
+    const activeTeams = teams.filter((team) => (gamesByTeam.get(team) || []).length > 0);
+    const priorRating = new Map();
+    for (const team of teams) {
+      const prior = priorByTeam.get(team);
+      priorRating.set(team, 0.35 * finiteOr(toNumber(prior?.net_rating), fallback.net_rating));
+    }
+
+    const rating = new Map(priorRating);
+    for (let iteration = 0; iteration < 60; iteration += 1) {
+      const next = new Map();
+      for (const team of teams) {
+        const teamGames = gamesByTeam.get(team) || [];
+        const prior = finiteOr(priorRating.get(team), 0);
+        if (!teamGames.length) {
+          next.set(team, prior);
+          continue;
+        }
+        const observed = mean(teamGames.map((game) => game.margin + finiteOr(rating.get(game.opp), 0)));
+        const currentWeight = teamGames.length / (teamGames.length + 6);
+        next.set(team, currentWeight * observed + (1 - currentWeight) * prior);
+      }
+      const center = activeTeams.length ? mean(activeTeams.map((team) => finiteOr(next.get(team), 0))) : 0;
+      for (const team of teams) {
+        rating.set(team, finiteOr(next.get(team), 0) - center);
+      }
+    }
+
+    const rankedTeams = [...teams].sort((a, b) => finiteOr(rating.get(b), 0) - finiteOr(rating.get(a), 0));
+    const rank = new Map(rankedTeams.map((team, index) => [team, index + 1]));
+    const tierSize = Math.max(8, Math.round(rankedTeams.length / 4));
+
+    return teams.map((team) => {
+      const current = currentByTeam.get(team) || {};
+      const prior = priorByTeam.get(team) || fallback;
+      const teamGames = gamesByTeam.get(team) || [];
+      const gameCount = teamGames.length;
+      const tempo = clampNumber(finiteOr(toNumber(prior.tempo), fallback.tempo || 68), 58, 78);
+      const sos = gameCount
+        ? mean(teamGames.map((game) => finiteOr(rating.get(game.opp), 0)))
+        : finiteOr(toNumber(prior.sos), fallback.sos);
+      const avgPointsFor = gameCount ? mean(teamGames.map((game) => game.points_for)) : Number.NaN;
+      const avgPointsAgainst = gameCount ? mean(teamGames.map((game) => game.points_against)) : Number.NaN;
+      const adjOffense = gameCount
+        ? clampNumber(100 * avgPointsFor / Math.max(58, tempo) + 0.25 * sos, 80, 140)
+        : clampNumber(finiteOr(toNumber(prior.adj_offense), fallback.adj_offense), 80, 140);
+      const adjDefense = gameCount
+        ? clampNumber(100 * avgPointsAgainst / Math.max(58, tempo) - 0.25 * sos, 80, 140)
+        : clampNumber(finiteOr(toNumber(prior.adj_defense), fallback.adj_defense), 80, 140);
+      const recent = teamGames.slice(-10);
+      const recentForm = recent.length
+        ? clampNumber(mean(recent.map((game) => {
+            const marginScore = 0.5 + 0.5 * Math.tanh(game.margin / 12);
+            return 0.65 * (game.won ? 1 : 0) + 0.35 * marginScore;
+          })), 0, 1)
+        : 0.5;
+
+      let q1Wins = 0;
+      let q2Wins = 0;
+      let q3Losses = 0;
+      let q4Losses = 0;
+      for (const game of teamGames) {
+        const oppRank = finiteOr(rank.get(game.opp), rankedTeams.length);
+        if (game.won) {
+          if (oppRank <= tierSize) q1Wins += 1;
+          else if (oppRank <= tierSize * 2) q2Wins += 1;
+        } else if (oppRank <= tierSize * 3) {
+          q3Losses += 1;
+        } else {
+          q4Losses += 1;
+        }
+      }
+
+      const row = { season: seasonNumber, team };
+      for (const feature of FEATURE_COLS) {
+        row[feature] = finiteOr(toNumber(prior[feature]), fallback[feature]);
+      }
+      row.seed = finiteOr(toNumber(current.seed), finiteOr(toNumber(prior.seed), 8));
+      row.adj_offense = adjOffense;
+      row.adj_defense = adjDefense;
+      row.tempo = tempo;
+      row.sos = clampNumber(sos, -20, 20);
+      row.net_rating = clampNumber(finiteOr(rating.get(team), adjOffense - adjDefense), -40, 40);
+      row.q1_wins = q1Wins;
+      row.q2_wins = q2Wins;
+      row.q3_losses = q3Losses;
+      row.q4_losses = q4Losses;
+      row.recent_form = recentForm;
+      row.injuries_impact = 0;
+      row.as_of_date = cutoffDate || "";
+      row.as_of_game_index = isFiniteNumber(cutoffGameIndex) ? cutoffGameIndex : null;
+      row.snapshot_games = gameCount;
+      return row;
+    });
+  }
+
   function median(values) {
     if (!values.length) {
       return 0;
@@ -1345,6 +1541,21 @@
       normalized[key] = weights[key] / total;
     }
     return normalized;
+  }
+
+
+  function blendAvailableProbabilities(tuning, components, availability = {}) {
+    let weighted = 0;
+    let totalWeight = 0;
+    for (const key of BLEND_KEYS) {
+      if (availability[key] === false) continue;
+      const probability = toNumber(components?.[key]);
+      const weight = Math.max(0, finiteOr(tuning?.[key], 0));
+      if (!isFiniteNumber(probability) || weight <= 1e-12) continue;
+      weighted += weight * clampProb(probability);
+      totalWeight += weight;
+    }
+    return totalWeight > 1e-12 ? clampProb(weighted / totalWeight) : 0.5;
   }
 
   function normalizeTuningParams(tuning) {
@@ -3099,14 +3310,26 @@
     }
     const marketAvailable = normalizedContext.market_available > 0 ? 1 : 0;
 
-    const legacyBlend = clampProb(
-      tuning.blend_logistic * modelProb +
-      tuning.blend_tree * treeProb +
-      tuning.blend_rating * performanceProb +
-      tuning.blend_style * styleProb +
-      tuning.blend_archetype * archetypeProb +
-      tuning.blend_market * marketProb +
-      tuning.blend_latent * latentProb,
+    const legacyBlend = blendAvailableProbabilities(
+      tuning,
+      {
+        blend_logistic: modelProb,
+        blend_tree: treeProb,
+        blend_rating: performanceProb,
+        blend_style: styleProb,
+        blend_archetype: archetypeProb,
+        blend_market: marketProb,
+        blend_latent: latentProb,
+      },
+      {
+        blend_logistic: true,
+        blend_tree: Boolean(performanceStyle?.treeModel?.stumps?.length),
+        blend_rating: true,
+        blend_style: Boolean(performanceStyle?.styleModel),
+        blend_archetype: Boolean(performanceStyle?.archetypeModel),
+        blend_market: marketAvailable > 0 || finiteOr(performanceStyle?.market_rows, 0) > 0,
+        blend_latent: Boolean(performanceStyle?.latentModel),
+      },
     );
 
     const stacker = performanceStyle?.stacker;
@@ -4171,14 +4394,19 @@
 
     const contexts = [];
     for (const season of selectedSeasons) {
+      const window = pickWindow(config, season);
       let snapshot = [];
       try {
-        snapshot = seasonSnapshot(teamStats, season);
+        snapshot = buildLeakageSafeSnapshot(
+          teamStats,
+          historical || [],
+          season,
+          { date: window.first_four_start },
+        );
       } catch {
         continue;
       }
 
-      const window = pickWindow(config, season);
       const split = buildTrainingSplitForHoldout(
         teamStats,
         historical || [],
@@ -4187,6 +4415,10 @@
         options,
       );
       const trainGames = trainGameCap > 0 ? capRowsEvenly(split.trainGames, trainGameCap) : split.trainGames;
+      const trainStats = [
+        ...split.trainStats.filter((row) => Number(row.season) !== season),
+        ...snapshot,
+      ];
       const seasonTournamentGames = capRowsEvenly(
         (historical || [])
           .filter((game) => Number(game?.season) === season && ncaaRoundOrderFromRoundName(game?.round_name) >= 1)
@@ -4196,9 +4428,10 @@
       const baseContext = {
         season,
         first_four_start: window.first_four_start,
-        trainStats: split.trainStats,
+        trainStats,
         trainGames,
         holdoutSnapshot: snapshot,
+        snapshot_as_of: window.first_four_start,
         tournament_games: seasonTournamentGames,
         source: "historical_games",
       };
@@ -4521,6 +4754,7 @@
         normalized: score.normalized,
         avg_actual_winner_prob: actualProb.avg_prob,
         actual_slots_scored: actualProb.slots_scored,
+        snapshot_as_of: context.snapshot_as_of || null,
       });
       scored += 1;
     }
@@ -4994,13 +5228,18 @@
       if (seasonGames.length < minTestGames) {
         continue;
       }
-      let snapshot = [];
+      const priorStats = teamStats.filter((row) => Number(row.season) < season);
+      let preSeasonSnapshot = [];
       try {
-        snapshot = seasonSnapshot(teamStats, season);
+        preSeasonSnapshot = buildLeakageSafeSnapshot(
+          teamStats,
+          filteredHistorical || [],
+          season,
+          { game_index: 0 },
+        );
       } catch {
         continue;
       }
-      const trainStats = teamStats.filter((row) => Number(row.season) <= season);
       const priorGames = (filteredHistorical || []).filter((row) => Number(row.season) < season);
 
       if (priorGames.length >= minTrainGames) {
@@ -5008,10 +5247,11 @@
           season,
           label: "prior_seasons",
           split: null,
-          trainStats,
+          trainStats: [...priorStats, ...preSeasonSnapshot],
           trainGames: priorGames,
           testGames: seasonGames,
-          snapshot,
+          snapshot: preSeasonSnapshot,
+          snapshot_cutoff_game_index: 0,
           weight: holdoutSeasonWeight(targetSeason, season, recencyDecay),
         });
       }
@@ -5023,14 +5263,27 @@
         if (early.length < minTrainGames || late.length < minTestGames) {
           continue;
         }
+        const cutoffGameIndex = Number(seasonGames[cutoff]?.game_index ?? cutoff);
+        let snapshot = [];
+        try {
+          snapshot = buildLeakageSafeSnapshot(
+            teamStats,
+            filteredHistorical || [],
+            season,
+            { game_index: cutoffGameIndex },
+          );
+        } catch {
+          continue;
+        }
         contexts.push({
           season,
           label: "within_season",
           split,
-          trainStats,
+          trainStats: [...priorStats, ...snapshot],
           trainGames: [...priorGames, ...early],
           testGames: late,
           snapshot,
+          snapshot_cutoff_game_index: cutoffGameIndex,
           weight: holdoutSeasonWeight(targetSeason, season, recencyDecay) * withinSeasonWeight,
         });
       }
@@ -5129,6 +5382,7 @@
         brier_score: metrics.brier_score,
         accuracy: metrics.accuracy,
         objective,
+        snapshot_cutoff_game_index: context.snapshot_cutoff_game_index ?? null,
       });
     }
 
@@ -6540,11 +6794,15 @@
     return result;
   }
 
-  async function loadRuntimeData(season) {
+  async function loadRuntimeData(season, options = {}) {
     const base = `./data/runtime/${season}`;
+    const preferLiveHistory = options.prefer_live_history === true;
+    const historicalPromise = preferLiveHistory
+      ? fetchText(`${base}/historical_games_live.csv`).catch(() => fetchText(`${base}/historical_games.csv`))
+      : fetchText(`${base}/historical_games.csv`);
     const [teamStatsText, historicalText, aliasesText, injuriesText] = await Promise.all([
       fetchText(`${base}/team_stats.csv`),
-      fetchText(`${base}/historical_games.csv`),
+      historicalPromise,
       fetchText(`${base}/aliases.csv`).catch(() => "canonical,alias\n"),
       fetchText(`${base}/injuries.csv`).catch(() => "team,injuries_impact\n"),
     ]);
@@ -6855,7 +7113,7 @@
     const season = Number(options.season || config.default_season || new Date().getUTCFullYear());
     const liveCfg = config?.live_runtime || {};
 
-    const { teamStats, historical, injuries, aliasMap, quality_report: qualityReport } = await loadRuntimeData(season);
+    const { teamStats, historical, injuries, aliasMap, quality_report: qualityReport } = await loadRuntimeData(season, { prefer_live_history: true });
     const adjustedTeamStats = applyInjuries(teamStats, injuries, season);
     const snapshot = seasonSnapshot(adjustedTeamStats, season);
 
@@ -7089,5 +7347,13 @@
     buildLivePayload,
     buildUserBracketPayload,
     runBenchmark,
+    __test: {
+      blendAvailableProbabilities,
+      buildLeakageSafeSnapshot,
+      gameOccursBeforeCutoff,
+      loadRuntimeData,
+      prepareRegularSeasonBenchmarkContexts,
+      prepareBacktestContexts,
+    },
   };
 })();

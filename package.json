@@ -1,0 +1,15 @@
+{
+  "name": "march-madness-predictor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static March Madness prediction runtime and benchmark tooling",
+  "scripts": {
+    "check": "node --check docs/live-runtime.js && node --check scripts/benchmark.js && node --check scripts/build_d1_runtime_data.js && node --check scripts/build_live_history.js",
+    "test": "node --test tests/*.test.js",
+    "build:live-history": "node scripts/build_live_history.js --season 2026",
+    "benchmark:smoke": "node scripts/benchmark.js --season 2026 --trials 2 --refine-rounds 0 --crossover-rounds 0 --cem-rounds 0 --local-search-passes 0 --tournament-context-limit 1 --regular-context-limit 1 --tournament-train-game-cap 300 --regular-train-game-cap 300 --regular-test-game-cap 40 --fast-models --full-rescore-top-k 0 --out data/generated/2026/_smoke_improvements.json"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

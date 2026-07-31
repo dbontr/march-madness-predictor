@@ -45,6 +45,20 @@ python3 -m http.server 8080
 
 Then open `http://localhost:8080/docs/`.
 
+## Development checks
+
+```bash
+npm test
+npm run check
+npm run benchmark:smoke
+```
+
+Regenerate the compact browser history after changing runtime limits or historical data:
+
+```bash
+npm run build:live-history
+```
+
 ## Runtime query params
 
 Optional URL parameters:
@@ -66,6 +80,7 @@ The browser runtime expects:
 - `docs/data/runtime/config.json`
 - `docs/data/runtime/<season>/team_stats.csv`
 - `docs/data/runtime/<season>/historical_games.csv`
+- `docs/data/runtime/<season>/historical_games_live.csv` (compact live-training subset; falls back to the full file)
 - `docs/data/runtime/<season>/aliases.csv` (optional)
 - `docs/data/runtime/<season>/injuries.csv` (optional)
 
@@ -75,7 +90,7 @@ Current repo includes `2026` runtime CSVs under `docs/data/runtime/2026/`.
 
 At runtime, `docs/live-runtime.js`:
 
-1. loads local runtime CSV files
+1. loads the compact live-history CSV when available, with automatic fallback to the full history
 2. fetches NCAA scoreboard/event data from ESPN public JSON endpoints
 3. runs data-quality guards against malformed rows, duplicate games, unknown teams, and outliers
 4. derives bracket slots and locks completed game winners
@@ -88,7 +103,9 @@ At runtime, `docs/live-runtime.js`:
 ## Model Tuning + Backtests
 
 - Runtime backtest harness runs walk-forward holdout seasons and scores by ESPN-style round points.
-- Holdout training uses pre-tournament data only for each season (filters out NCAA tournament rounds when present).
+- Tournament snapshots use only games before the First Four cutoff.
+- Regular-season snapshots use only games before each split cutoff; later games cannot affect features, training rows, or evaluation snapshots.
+- Current-season style fields in historical holdouts come from the prior season or neutral priors, not final current-season statistics.
 - Adaptive tuning search (random -> refine -> crossover -> CEM -> local search) optimizes objective = normalized bracket score + actual-winner probability - stability penalty across seasons.
 - Seed/rank is excluded from matchup model features and tie-break scoring (performance metrics only).
 - Home-court context is modeled for non-neutral games in game-level backtests and calibration.
@@ -144,6 +161,8 @@ What this script does:
   - `data/raw/<target-season>/historical_games.csv`
   - `docs/data/runtime/<target-season>/team_stats.csv`
   - `docs/data/runtime/<target-season>/historical_games.csv`
+  - `docs/data/runtime/<target-season>/historical_games_live.csv`
+- The compact live file uses `live_runtime.max_seasons`, `live_runtime.game_cap`, and `live_runtime.include_postseason` from runtime config.
 - Stores generation metadata in `data/generated/<target-season>/full_d1_generation_report.json`.
 
 Useful flags:
